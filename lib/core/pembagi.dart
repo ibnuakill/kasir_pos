@@ -11,6 +11,13 @@ abstract interface class Pembagi {
     required String namaBerkas,
     required String teks,
   });
+
+  /// Membagikan satu berkas yang sudah ada di penyimpanan, misalnya Backup ZIP.
+  Future<void> bagikanBerkas(
+    String path, {
+    required String namaBerkas,
+    required String teks,
+  });
 }
 
 /// Pembagi sungguhan: menyerahkan berkas ke aplikasi lain lewat lembar berbagi
@@ -29,6 +36,21 @@ class PembagiSistem implements Pembagi {
     await SharePlus.instance.share(
       ShareParams(
         files: [XFile.fromData(png, mimeType: 'image/png')],
+        fileNameOverrides: [namaBerkas],
+        text: teks,
+      ),
+    );
+  }
+
+  @override
+  Future<void> bagikanBerkas(
+    String path, {
+    required String namaBerkas,
+    required String teks,
+  }) async {
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(path, mimeType: 'application/zip')],
         fileNameOverrides: [namaBerkas],
         text: teks,
       ),

@@ -4,10 +4,14 @@
 
 **Blocked by:** 06 (Foto Produk), 13 (Detail Transaksi dan Transaksi Batal)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Ekspor menghasilkan satu berkas ZIP yang bisa dibagikan lewat lembar berbagi sistem
-- [ ] Berkas itu memuat Produk, Kategori, Foto Produk, riwayat Stok, Transaksi, dan Data Toko
-- [ ] Gambar QR toko ikut di dalamnya
-- [ ] Tanggal Backup terakhir tercatat dan tampil di Pengaturan
-- [ ] Ekspor tidak mengubah data yang sedang ada
+- [x] Ekspor menghasilkan satu berkas ZIP yang bisa dibagikan lewat lembar berbagi sistem
+- [x] Berkas itu memuat Produk, Kategori, Foto Produk, riwayat Stok, Transaksi, dan Data Toko
+- [x] Gambar QR toko ikut di dalamnya
+- [x] Tanggal Backup terakhir tercatat dan tampil di Pengaturan
+- [x] Ekspor tidak mengubah data yang sedang ada
+
+## Comments
+
+**2026-10-17** — ZIP `kasir-backup-YYYYMMDD-HHmm.zip` berisi `backup.json` + `gambar/…`. Tabel disimpan sebagai baris JSON apa adanya (nama kolom database), bukan kelas Dart, supaya kolom baru tidak terlupa; `IsiBackup.urutanTabel` ikut dependensi FK dan dijaga test yang membandingkannya dengan `database.allTables`. `versiSekarang = 1`. Berbagi lewat `Pembagi.bagikanBerkas` (method baru di antarmuka) memakai `share_plus`; `archive` dipakai untuk `ZipEncoder`. `BackupStore` sekarang `implements PembuatBackup` supaya layar Pengaturan bisa diuji tanpa menulis berkas sungguhan — penulisan berkas nyata tidak berjalan di jam palsu `testWidgets`, jadi test layar memakai `_BackupPalsu` dan isi ZIP diuji di `test()` biasa. Tanggal terakhir disimpan di `app_settings` (`backup.terakhir`) dan ditampilkan di kartu Backup. 143 test lulus (9 baru).

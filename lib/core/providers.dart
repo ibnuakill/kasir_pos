@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/clock.dart';
 import 'package:kasir/core/pemilih_gambar.dart';
 import 'package:kasir/core/pembagi.dart';
+import 'package:kasir/data/backup_store.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/data/gambar_store.dart';
 import 'package:kasir/data/keranjang_store.dart';
@@ -27,6 +28,20 @@ final tokoProvider = FutureProvider<Toko?>(
 /// Penyimpanan gambar milik aplikasi. Di test diarahkan ke folder sementara.
 final gambarStoreProvider = Provider<GambarStore>(
   (ref) => GambarStore.aplikasi(),
+);
+
+/// Pembuat dan pembaca Backup ZIP. Di test diarahkan ke folder sementara supaya
+/// tidak bergantung pada folder sementara perangkat.
+final backupStoreProvider = Provider<PembuatBackup>(
+  (ref) => BackupStore(
+    ref.watch(databaseProvider),
+    ref.watch(gambarStoreProvider),
+  ),
+);
+
+/// Tanggal Backup terakhir yang dibuat, atau null bila belum pernah.
+final backupTerakhirProvider = FutureProvider<DateTime?>(
+  (ref) => ref.watch(backupStoreProvider).terakhir(),
 );
 
 /// Pintu masuk gambar dari galeri atau kamera. Di test diganti pemilih palsu.

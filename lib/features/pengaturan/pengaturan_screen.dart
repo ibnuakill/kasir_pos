@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/providers.dart';
+import 'package:kasir/core/waktu.dart';
 import 'package:kasir/data/qris_store.dart';
 import 'package:kasir/data/toko_store.dart';
 import 'package:kasir/features/pin/pin_gate.dart';
@@ -44,6 +45,7 @@ class _IsiPengaturan extends ConsumerStatefulWidget {
 
 class _IsiPengaturanState extends ConsumerState<_IsiPengaturan> {
   final _formKey = GlobalKey<FormState>();
+  bool _membuatBackup = false;
   late final _nama = TextEditingController(text: widget.toko.nama);
   late final _alamat = TextEditingController(text: widget.toko.alamat);
 
@@ -89,10 +91,43 @@ class _IsiPengaturanState extends ConsumerState<_IsiPengaturan> {
     ref.invalidate(gambarQrisProvider);
   }
 
+  /// Membuat Backup ZIP lalu menyerahkannya ke lembar berbagi sistem
+  /// (user story 71, 73). Tanggalnya dicatat supaya Pengaturan bisa
+  /// menunjukkannya (user story 76).
+  Future<void> _ekspor() async {
+    setState(() => _membuatBackup = true);
+    try {
+      final berkas = await ref
+          .read(backupStoreProvider)
+          .ekspor(waktu: ref.read(clockProvider)());
+      await ref
+          .read(pembagiProvider)
+          .bagikanBerkas(
+            berkas.path,
+            namaBerkas: berkas.uri.pathSegments.last,
+            teks: 'Backup data kasir',
+          );
+
+      if (!mounted) return;
+      ref.invalidate(backupTerakhirProvider);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup siap dibagikan')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup gagal dibuat')),
+      );
+    } finally {
+      if (mounted) setState(() => _membuatBackup = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final teks = Theme.of(context).textTheme;
     final gambarQris = ref.watch(gambarQrisProvider);
+    final backupTerakhir = ref.watch(backupTerakhirProvider);
 
     return Form(
       key: _formKey,
@@ -187,6 +222,42 @@ class _IsiPengaturanState extends ConsumerState<_IsiPengaturan> {
                   onPressed: _hapusGambarQris,
                   child: const Text('Hapus'),
                 ),
+            ],
+          ),
+          const Divider(height: 40),
+          Text('Backup', style: teks.titleMedium),
+          const SizedBox(height: 4),
+          Text(
+            'Seluruh data toko — katalog, Foto Produk, riwayat Stok, Transaksi, '
+            'dan gambar QR — dikemas menjadi satu berkas ZIP.',
+            style: teks.bodySmall,
+          ),
+          const SizedBox(height: 8),
+          backupTerakhir.when(
+            loading: () => const SizedBox(height: 20),
+            error: (error, _) => Text('Gagal membaca tanggal Backup: $error'),
+            data: (waktu) => Text(
+              waktu == null
+                  ? 'Belum pernah membuat Backup.'
+                  : 'Backup terakhir: ${formatTanggal(waktu)} ${formatJam(waktu)}',
+              key: const Key('backup-terakhir'),
+              style: teks.bodyMedium,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              FilledButton.tonal(
+                key: const Key('backup-ekspor'),
+                onPressed: _membuatBackup ? null : _ekspor,
+                child: _membuatBackup
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Ekspor Backup'),
+              ),
             ],
           ),
         ],

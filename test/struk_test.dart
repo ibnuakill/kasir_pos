@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -37,6 +38,23 @@ class _PembagiPalsu implements Pembagi {
     if (gagal) throw StateError('lembar berbagi tidak tersedia');
     dibagikan.add(
       _Bagian(nama: namaBerkas, teks: teks, panjang: png.length),
+    );
+  }
+
+  @override
+  Future<void> bagikanBerkas(
+    String path, {
+    required String namaBerkas,
+    required String teks,
+  }) async {
+    gagalDipanggil = true;
+    if (gagal) throw StateError('lembar berbagi tidak tersedia');
+    dibagikan.add(
+      _Bagian(
+        nama: namaBerkas,
+        teks: teks,
+        panjang: await File(path).length(),
+      ),
     );
   }
 }

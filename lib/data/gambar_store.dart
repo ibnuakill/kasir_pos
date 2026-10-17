@@ -45,6 +45,20 @@ class GambarStore {
     if (await berkas.exists()) await berkas.delete();
   }
 
+  /// Semua berkas gambar yang tersimpan, untuk dikemas ke dalam Backup.
+  Future<List<File>> semua() async {
+    final folder = await _folder();
+    if (!await folder.exists()) return const [];
+    return [
+      await for (final berkas in folder.list())
+        if (berkas is File) berkas,
+    ];
+  }
+
+  /// Folder tempat gambar disimpan. Dipakai Backup untuk menaruh kembali
+  /// gambar hasil Impor.
+  Future<Directory> folder() => _folder();
+
   Future<void> _hapusBernama(Directory folder, String nama) async {
     if (!await folder.exists()) return;
     await for (final lama in folder.list()) {
