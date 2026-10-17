@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/clock.dart';
 import 'package:kasir/core/providers.dart';
 import 'package:kasir/data/database.dart';
-import 'package:kasir/features/shell/home_shell.dart';
+import 'package:kasir/features/root_gate.dart';
 
 const _seedColor = Color(0xFF2E7D32);
 
@@ -30,7 +30,7 @@ class KasirApp extends StatelessWidget {
         themeMode: ThemeMode.system,
         theme: ThemeData(colorSchemeSeed: _seedColor, brightness: Brightness.light),
         darkTheme: ThemeData(colorSchemeSeed: _seedColor, brightness: Brightness.dark),
-        home: const HomeShell(),
+        home: const RootGate(),
       ),
     );
   }

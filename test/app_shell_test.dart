@@ -3,11 +3,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kasir/app.dart';
 import 'package:kasir/core/clock.dart';
 import 'package:kasir/data/database.dart';
+import 'package:kasir/data/toko_store.dart';
 
 void main() {
   late AppDatabase database;
 
-  setUp(() => database = AppDatabase.inMemory());
+  setUp(() async {
+    database = AppDatabase.inMemory();
+    await TokoStore(
+      database,
+    ).simpan(const Toko(nama: 'Toko Uji', alamat: 'Jl. Uji No. 1'));
+  });
   tearDown(() => database.close());
 
   KasirApp buildApp() => KasirApp(
@@ -39,7 +45,7 @@ void main() {
 
     await tester.tap(find.text('Pengaturan').last);
     await tester.pumpAndSettle();
-    expect(find.text('Pengaturan toko'), findsOneWidget);
+    expect(find.text('Toko Uji'), findsOneWidget);
 
     await tester.tap(find.text('Kasir').last);
     await tester.pumpAndSettle();
