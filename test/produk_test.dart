@@ -20,7 +20,17 @@ void main() {
   });
   tearDown(() => database.close());
 
+  /// Formulir Produk memuat bagian foto, jadi layar uji dibuat tinggi supaya
+  /// seluruh isinya terbangun tanpa perlu menggulir.
+  void layarTinggi(WidgetTester tester) {
+    tester.view.physicalSize = const Size(500, 2000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+  }
+
   Future<void> bukaProduk(WidgetTester tester) async {
+    layarTinggi(tester);
     await tester.pumpWidget(
       KasirApp(
         database: database,

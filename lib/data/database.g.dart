@@ -487,6 +487,15 @@ class $ProdukTable extends Produk with TableInfo<$ProdukTable, ProdukData> {
     ),
     defaultValue: const Constant(true),
   );
+  static const VerificationMeta _fotoMeta = const VerificationMeta('foto');
+  @override
+  late final GeneratedColumn<String> foto = GeneratedColumn<String>(
+    'foto',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -496,6 +505,7 @@ class $ProdukTable extends Produk with TableInfo<$ProdukTable, ProdukData> {
     bolehPecahan,
     kategoriId,
     aktif,
+    foto,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -560,6 +570,12 @@ class $ProdukTable extends Produk with TableInfo<$ProdukTable, ProdukData> {
         aktif.isAcceptableOrUnknown(data['aktif']!, _aktifMeta),
       );
     }
+    if (data.containsKey('foto')) {
+      context.handle(
+        _fotoMeta,
+        foto.isAcceptableOrUnknown(data['foto']!, _fotoMeta),
+      );
+    }
     return context;
   }
 
@@ -597,6 +613,10 @@ class $ProdukTable extends Produk with TableInfo<$ProdukTable, ProdukData> {
         DriftSqlType.bool,
         data['${effectivePrefix}aktif'],
       )!,
+      foto: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}foto'],
+      ),
     );
   }
 
@@ -620,6 +640,11 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
   /// Boleh kosong: katalog bisa diisi sebelum sempat dirapikan per Kategori.
   final int? kategoriId;
   final bool aktif;
+
+  /// Path berkas Foto Produk di penyimpanan aplikasi, bukan isi gambarnya.
+  /// Null berarti Produk ini belum punya foto dan katalog memakai penanda
+  /// pengganti.
+  final String? foto;
   const ProdukData({
     required this.id,
     required this.nama,
@@ -628,6 +653,7 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
     required this.bolehPecahan,
     this.kategoriId,
     required this.aktif,
+    this.foto,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -641,6 +667,9 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
       map['kategori_id'] = Variable<int>(kategoriId);
     }
     map['aktif'] = Variable<bool>(aktif);
+    if (!nullToAbsent || foto != null) {
+      map['foto'] = Variable<String>(foto);
+    }
     return map;
   }
 
@@ -655,6 +684,7 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
           ? const Value.absent()
           : Value(kategoriId),
       aktif: Value(aktif),
+      foto: foto == null && nullToAbsent ? const Value.absent() : Value(foto),
     );
   }
 
@@ -671,6 +701,7 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
       bolehPecahan: serializer.fromJson<bool>(json['bolehPecahan']),
       kategoriId: serializer.fromJson<int?>(json['kategoriId']),
       aktif: serializer.fromJson<bool>(json['aktif']),
+      foto: serializer.fromJson<String?>(json['foto']),
     );
   }
   @override
@@ -684,6 +715,7 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
       'bolehPecahan': serializer.toJson<bool>(bolehPecahan),
       'kategoriId': serializer.toJson<int?>(kategoriId),
       'aktif': serializer.toJson<bool>(aktif),
+      'foto': serializer.toJson<String?>(foto),
     };
   }
 
@@ -695,6 +727,7 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
     bool? bolehPecahan,
     Value<int?> kategoriId = const Value.absent(),
     bool? aktif,
+    Value<String?> foto = const Value.absent(),
   }) => ProdukData(
     id: id ?? this.id,
     nama: nama ?? this.nama,
@@ -703,6 +736,7 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
     bolehPecahan: bolehPecahan ?? this.bolehPecahan,
     kategoriId: kategoriId.present ? kategoriId.value : this.kategoriId,
     aktif: aktif ?? this.aktif,
+    foto: foto.present ? foto.value : this.foto,
   );
   ProdukData copyWithCompanion(ProdukCompanion data) {
     return ProdukData(
@@ -719,6 +753,7 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
           ? data.kategoriId.value
           : this.kategoriId,
       aktif: data.aktif.present ? data.aktif.value : this.aktif,
+      foto: data.foto.present ? data.foto.value : this.foto,
     );
   }
 
@@ -731,7 +766,8 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
           ..write('satuan: $satuan, ')
           ..write('bolehPecahan: $bolehPecahan, ')
           ..write('kategoriId: $kategoriId, ')
-          ..write('aktif: $aktif')
+          ..write('aktif: $aktif, ')
+          ..write('foto: $foto')
           ..write(')'))
         .toString();
   }
@@ -745,6 +781,7 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
     bolehPecahan,
     kategoriId,
     aktif,
+    foto,
   );
   @override
   bool operator ==(Object other) =>
@@ -756,7 +793,8 @@ class ProdukData extends DataClass implements Insertable<ProdukData> {
           other.satuan == this.satuan &&
           other.bolehPecahan == this.bolehPecahan &&
           other.kategoriId == this.kategoriId &&
-          other.aktif == this.aktif);
+          other.aktif == this.aktif &&
+          other.foto == this.foto);
 }
 
 class ProdukCompanion extends UpdateCompanion<ProdukData> {
@@ -767,6 +805,7 @@ class ProdukCompanion extends UpdateCompanion<ProdukData> {
   final Value<bool> bolehPecahan;
   final Value<int?> kategoriId;
   final Value<bool> aktif;
+  final Value<String?> foto;
   const ProdukCompanion({
     this.id = const Value.absent(),
     this.nama = const Value.absent(),
@@ -775,6 +814,7 @@ class ProdukCompanion extends UpdateCompanion<ProdukData> {
     this.bolehPecahan = const Value.absent(),
     this.kategoriId = const Value.absent(),
     this.aktif = const Value.absent(),
+    this.foto = const Value.absent(),
   });
   ProdukCompanion.insert({
     this.id = const Value.absent(),
@@ -784,6 +824,7 @@ class ProdukCompanion extends UpdateCompanion<ProdukData> {
     this.bolehPecahan = const Value.absent(),
     this.kategoriId = const Value.absent(),
     this.aktif = const Value.absent(),
+    this.foto = const Value.absent(),
   }) : nama = Value(nama),
        hargaKatalog = Value(hargaKatalog),
        satuan = Value(satuan);
@@ -795,6 +836,7 @@ class ProdukCompanion extends UpdateCompanion<ProdukData> {
     Expression<bool>? bolehPecahan,
     Expression<int>? kategoriId,
     Expression<bool>? aktif,
+    Expression<String>? foto,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -804,6 +846,7 @@ class ProdukCompanion extends UpdateCompanion<ProdukData> {
       if (bolehPecahan != null) 'boleh_pecahan': bolehPecahan,
       if (kategoriId != null) 'kategori_id': kategoriId,
       if (aktif != null) 'aktif': aktif,
+      if (foto != null) 'foto': foto,
     });
   }
 
@@ -815,6 +858,7 @@ class ProdukCompanion extends UpdateCompanion<ProdukData> {
     Value<bool>? bolehPecahan,
     Value<int?>? kategoriId,
     Value<bool>? aktif,
+    Value<String?>? foto,
   }) {
     return ProdukCompanion(
       id: id ?? this.id,
@@ -824,6 +868,7 @@ class ProdukCompanion extends UpdateCompanion<ProdukData> {
       bolehPecahan: bolehPecahan ?? this.bolehPecahan,
       kategoriId: kategoriId ?? this.kategoriId,
       aktif: aktif ?? this.aktif,
+      foto: foto ?? this.foto,
     );
   }
 
@@ -851,6 +896,9 @@ class ProdukCompanion extends UpdateCompanion<ProdukData> {
     if (aktif.present) {
       map['aktif'] = Variable<bool>(aktif.value);
     }
+    if (foto.present) {
+      map['foto'] = Variable<String>(foto.value);
+    }
     return map;
   }
 
@@ -863,7 +911,8 @@ class ProdukCompanion extends UpdateCompanion<ProdukData> {
           ..write('satuan: $satuan, ')
           ..write('bolehPecahan: $bolehPecahan, ')
           ..write('kategoriId: $kategoriId, ')
-          ..write('aktif: $aktif')
+          ..write('aktif: $aktif, ')
+          ..write('foto: $foto')
           ..write(')'))
         .toString();
   }
@@ -2826,6 +2875,7 @@ typedef $$ProdukTableCreateCompanionBuilder =
       Value<bool> bolehPecahan,
       Value<int?> kategoriId,
       Value<bool> aktif,
+      Value<String?> foto,
     });
 typedef $$ProdukTableUpdateCompanionBuilder =
     ProdukCompanion Function({
@@ -2836,6 +2886,7 @@ typedef $$ProdukTableUpdateCompanionBuilder =
       Value<bool> bolehPecahan,
       Value<int?> kategoriId,
       Value<bool> aktif,
+      Value<String?> foto,
     });
 
 final class $$ProdukTableReferences
@@ -2932,6 +2983,11 @@ class $$ProdukTableFilterComposer
 
   ColumnFilters<bool> get aktif => $composableBuilder(
     column: $table.aktif,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get foto => $composableBuilder(
+    column: $table.foto,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3048,6 +3104,11 @@ class $$ProdukTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<String> get foto => $composableBuilder(
+    column: $table.foto,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$KategoriTableOrderingComposer get kategoriId {
     final $$KategoriTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3102,6 +3163,9 @@ class $$ProdukTableAnnotationComposer
 
   GeneratedColumn<bool> get aktif =>
       $composableBuilder(column: $table.aktif, builder: (column) => column);
+
+  GeneratedColumn<String> get foto =>
+      $composableBuilder(column: $table.foto, builder: (column) => column);
 
   $$KategoriTableAnnotationComposer get kategoriId {
     final $$KategoriTableAnnotationComposer composer = $composerBuilder(
@@ -3216,6 +3280,7 @@ class $$ProdukTableTableManager
                 Value<bool> bolehPecahan = const Value.absent(),
                 Value<int?> kategoriId = const Value.absent(),
                 Value<bool> aktif = const Value.absent(),
+                Value<String?> foto = const Value.absent(),
               }) => ProdukCompanion(
                 id: id,
                 nama: nama,
@@ -3224,6 +3289,7 @@ class $$ProdukTableTableManager
                 bolehPecahan: bolehPecahan,
                 kategoriId: kategoriId,
                 aktif: aktif,
+                foto: foto,
               ),
           createCompanionCallback:
               ({
@@ -3234,6 +3300,7 @@ class $$ProdukTableTableManager
                 Value<bool> bolehPecahan = const Value.absent(),
                 Value<int?> kategoriId = const Value.absent(),
                 Value<bool> aktif = const Value.absent(),
+                Value<String?> foto = const Value.absent(),
               }) => ProdukCompanion.insert(
                 id: id,
                 nama: nama,
@@ -3242,6 +3309,7 @@ class $$ProdukTableTableManager
                 bolehPecahan: bolehPecahan,
                 kategoriId: kategoriId,
                 aktif: aktif,
+                foto: foto,
               ),
           withReferenceMapper: (p0) => p0
               .map(

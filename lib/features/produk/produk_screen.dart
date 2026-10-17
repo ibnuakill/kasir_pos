@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/kuantitas.dart';
 import 'package:kasir/core/rupiah.dart';
 import 'package:kasir/data/database.dart';
+import 'package:kasir/features/produk/foto_produk.dart';
 import 'package:kasir/features/produk/produk_form_screen.dart';
 import 'package:kasir/features/produk/produk_providers.dart';
 import 'package:kasir/features/stok/stok_providers.dart';
@@ -101,6 +102,12 @@ class _ProdukScreenState extends ConsumerState<ProdukScreen> {
                   itemBuilder: (context, index) {
                     final item = daftar[index];
                     return ListTile(
+                      key: Key('produk-baris-${item.id}'),
+                      leading: FotoProduk(
+                        key: Key('produk-foto-${item.id}'),
+                        path: item.foto,
+                        ukuran: 48,
+                      ),
                       title: Text(item.nama),
                       subtitle: Text(
                         [

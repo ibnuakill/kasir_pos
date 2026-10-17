@@ -70,4 +70,12 @@ class ProdukStore {
       ProdukCompanion(aktif: Value(aktif)),
     );
   }
+
+  /// Menempelkan atau melepas Foto Produk. Dipisah dari [ubah] karena
+  /// berkasnya baru bisa dinamai setelah Produk punya id.
+  Future<void> setFoto(int id, String? path) async {
+    await (_db.update(_db.produk)..where((t) => t.id.equals(id))).write(
+      ProdukCompanion(foto: Value(path)),
+    );
+  }
 }

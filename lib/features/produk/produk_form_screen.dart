@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kasir/core/providers.dart';
 import 'package:kasir/core/rupiah.dart';
 import 'package:kasir/data/database.dart';
+import 'package:kasir/features/produk/foto_produk.dart';
 import 'package:kasir/features/produk/produk_providers.dart';
 import 'package:kasir/features/stok/bagian_stok.dart';
 
@@ -28,6 +30,16 @@ class _ProdukFormScreenState extends ConsumerState<ProdukFormScreen> {
   late bool _bolehPecahan = widget.produk?.bolehPecahan ?? false;
   late int? _kategoriId = widget.produk?.kategoriId;
 
+  /// Berkas yang baru dipilih tapi belum disalin: nama berkasnya menunggu id
+  /// Produk, yang baru ada setelah barisnya disimpan.
+  String? _sumberFoto;
+
+  bool _fotoDihapus = false;
+
+  /// Yang ditampilkan di formulir: pilihan baru, atau foto lama, atau kosong.
+  String? get _fotoTampil =>
+      _sumberFoto ?? (_fotoDihapus ? null : widget.produk?.foto);
+
   bool get _mengubah => widget.produk != null;
 
   @override
@@ -42,11 +54,14 @@ class _ProdukFormScreenState extends ConsumerState<ProdukFormScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final store = ref.read(produkStoreProvider);
+    final gambar = ref.read(gambarStoreProvider);
     final harga = parseRupiah(_harga.text) ?? 0;
 
+    final int id;
     if (_mengubah) {
+      id = widget.produk!.id;
       await store.ubah(
-        widget.produk!.id,
+        id,
         nama: _nama.text,
         hargaKatalog: harga,
         satuan: _satuan.text,
@@ -54,7 +69,7 @@ class _ProdukFormScreenState extends ConsumerState<ProdukFormScreen> {
         kategoriId: _kategoriId,
       );
     } else {
-      await store.tambah(
+      id = await store.tambah(
         nama: _nama.text,
         hargaKatalog: harga,
         satuan: _satuan.text,
@@ -63,8 +78,31 @@ class _ProdukFormScreenState extends ConsumerState<ProdukFormScreen> {
       );
     }
 
+    // Foto disalin setelah Produk punya id, dan dinamai menurut id itu:
+    // mengganti foto otomatis membuang berkas lama, bukan menumpuk berkas baru.
+    if (_sumberFoto != null) {
+      final path = await gambar.simpanDari(_sumberFoto!, nama: 'produk-$id');
+      await store.setFoto(id, path);
+    } else if (_fotoDihapus) {
+      await gambar.hapus(widget.produk?.foto);
+      await store.setFoto(id, null);
+    }
+
     if (!mounted) return;
     Navigator.of(context).pop();
+  }
+
+  Future<void> _pilihFoto({required bool kamera}) async {
+    final pemilih = ref.read(pemilihGambarProvider);
+    final sumber = kamera
+        ? await pemilih.dariKamera()
+        : await pemilih.dariGaleri();
+    if (sumber == null || !mounted) return;
+
+    setState(() {
+      _sumberFoto = sumber;
+      _fotoDihapus = false;
+    });
   }
 
   Future<void> _ubahStatus() async {
@@ -100,6 +138,57 @@ class _ProdukFormScreenState extends ConsumerState<ProdukFormScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FotoProduk(
+                  key: const Key('produk-form-foto'),
+                  path: _fotoTampil,
+                  ukuran: 96,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Foto Produk',
+                        style: Theme.of(context).textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: 4),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: [
+                          OutlinedButton.icon(
+                            key: const Key('produk-form-foto-kamera'),
+                            onPressed: () => _pilihFoto(kamera: true),
+                            icon: const Icon(Icons.photo_camera_outlined),
+                            label: const Text('Kamera'),
+                          ),
+                          OutlinedButton.icon(
+                            key: const Key('produk-form-foto-galeri'),
+                            onPressed: () => _pilihFoto(kamera: false),
+                            icon: const Icon(Icons.photo_library_outlined),
+                            label: const Text('Galeri'),
+                          ),
+                          if (_fotoTampil != null)
+                            TextButton(
+                              key: const Key('produk-form-foto-hapus'),
+                              onPressed: () => setState(() {
+                                _sumberFoto = null;
+                                _fotoDihapus = true;
+                              }),
+                              child: const Text('Hapus foto'),
+                            ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             TextFormField(
               key: const Key('produk-form-nama'),
               controller: _nama,

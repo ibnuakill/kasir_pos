@@ -4,6 +4,7 @@ import 'package:kasir/core/kuantitas.dart';
 import 'package:kasir/core/rupiah.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/features/kasir/keranjang.dart';
+import 'package:kasir/features/produk/foto_produk.dart';
 import 'package:kasir/features/produk/produk_providers.dart';
 import 'package:kasir/features/stok/stok_providers.dart';
 
@@ -156,30 +157,42 @@ class _KartuProduk extends StatelessWidget {
       child: InkWell(
         key: Key('kasir-produk-${produk.id}'),
         onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  produk.nama,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: teks.titleSmall,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: FotoProduk(
+                key: Key('kasir-foto-${produk.id}'),
+                path: produk.foto,
               ),
-              Text(formatRupiah(produk.hargaKatalog), style: teks.bodyMedium),
-              Text(
-                habis ? 'stok habis' : 'stok ${formatKuantitas(stok)}',
-                style: teks.bodySmall?.copyWith(
-                  color: habis
-                      ? Theme.of(context).colorScheme.error
-                      : teks.bodySmall?.color,
-                ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    produk.nama,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: teks.titleSmall,
+                  ),
+                  Text(
+                    formatRupiah(produk.hargaKatalog),
+                    style: teks.bodyMedium,
+                  ),
+                  Text(
+                    habis ? 'stok habis' : 'stok ${formatKuantitas(stok)}',
+                    style: teks.bodySmall?.copyWith(
+                      color: habis
+                          ? Theme.of(context).colorScheme.error
+                          : teks.bodySmall?.color,
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

@@ -43,6 +43,11 @@ class Produk extends Table {
       integer().nullable().references(Kategori, #id)();
 
   BoolColumn get aktif => boolean().withDefault(const Constant(true))();
+
+  /// Path berkas Foto Produk di penyimpanan aplikasi, bukan isi gambarnya.
+  /// Null berarti Produk ini belum punya foto dan katalog memakai penanda
+  /// pengganti.
+  TextColumn get foto => text().nullable()();
 }
 
 /// Jenis pergerakan Stok. Disimpan sebagai teks supaya Backup tetap terbaca
@@ -126,7 +131,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.inMemory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 4;
+  int get schemaVersion => 5;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -147,6 +152,11 @@ class AppDatabase extends _$AppDatabase {
       if (from < 4) {
         await m.createTable(transaksi);
         await m.createTable(barisTransaksi);
+      }
+      // Kolom baru hanya ditambahkan kalau tabelnya sudah ada. Kalau tabelnya
+      // baru dibuat di langkah `from < 2`, kolomnya sudah ikut terpasang.
+      if (from >= 2 && from < 5) {
+        await m.addColumn(produk, produk.foto);
       }
     },
     beforeOpen: (details) async {
