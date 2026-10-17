@@ -6,12 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kasir/app.dart';
 import 'package:kasir/core/clock.dart';
+import 'package:kasir/core/pemilih_berkas.dart';
 import 'package:kasir/core/pembagi.dart';
 import 'package:kasir/core/providers.dart';
 import 'package:kasir/data/backup_store.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/data/gambar_store.dart';
 import 'package:kasir/data/kategori_store.dart';
+import 'package:kasir/data/laporan_store.dart';
 import 'package:kasir/data/pin_store.dart';
 import 'package:kasir/data/produk_store.dart';
 import 'package:kasir/data/qris_store.dart';
@@ -52,12 +54,14 @@ class _PembagiPalsu implements Pembagi {
 
 /// Pembuat Backup palsu untuk menguji layar Pengaturan tanpa menulis berkas
 /// sungguhan, yang tidak berjalan di jam palsu milik widget test.
-class _BackupPalsu implements PembuatBackup {
+class _BackupPalsu implements BackupKasir {
   _BackupPalsu(this.berkas);
 
   final File berkas;
   DateTime? waktu;
   bool gagal = false;
+  String? dipulihkan;
+  BackupTidakSahException? tolak;
 
   @override
   Future<File> ekspor({required DateTime waktu}) async {
@@ -68,6 +72,22 @@ class _BackupPalsu implements PembuatBackup {
 
   @override
   Future<DateTime?> terakhir() async => waktu;
+
+  @override
+  Future<void> pulihkan(String path) async {
+    if (tolak case final salah?) throw salah;
+    dipulihkan = path;
+  }
+}
+
+/// Pemilih berkas palsu: menjawab path tanpa membuka aplikasi berkas.
+class _PemilihBerkasPalsu implements PemilihBerkas {
+  _PemilihBerkasPalsu(this.path);
+
+  String? path;
+
+  @override
+  Future<String?> pilihBackup() async => path;
 }
 
 void main() {
@@ -77,6 +97,7 @@ void main() {
   late BackupStore backup;
   late _PembagiPalsu pembagi;
   late _BackupPalsu backupPalsu;
+  late _PemilihBerkasPalsu pemilihBerkas;
   late int kopiId;
 
   setUp(() async {
@@ -90,6 +111,9 @@ void main() {
       database,
       gambar,
       folder: () async => Directory(p.join(folderKerja.path, 'keluaran')),
+    );
+    pemilihBerkas = _PemilihBerkasPalsu(
+      p.join(folderKerja.path, 'kasir-backup-20261017-0930.zip'),
     );
     backupPalsu = _BackupPalsu(
       File(p.join(folderKerja.path, 'kasir-backup-20261017-0930.zip'))
@@ -246,6 +270,157 @@ void main() {
     });
   });
 
+  group('impor Backup', () {
+    late File berkasBackup;
+
+    setUp(() async {
+      berkasBackup = await backup.ekspor(waktu: DateTime(2026, 10, 17, 9, 30));
+    });
+
+    /// Perangkat lain: database kosong dan folder gambar sendiri, seperti HP
+    /// baru yang belum punya apa-apa.
+    ({AppDatabase db, GambarStore gambar, BackupStore backup}) perangkatBaru() {
+      final db = AppDatabase.inMemory();
+      final gambar = GambarStore(
+        () async => Directory(p.join(folderKerja.path, 'gambar-baru')),
+      );
+      return (
+        db: db,
+        gambar: gambar,
+        backup: BackupStore(
+          db,
+          gambar,
+          folder: () async => Directory(p.join(folderKerja.path, 'keluaran-2')),
+        ),
+      );
+    }
+
+    test('memulihkan katalog, Stok, Transaksi, dan Foto Produk', () async {
+      final baru = perangkatBaru();
+      addTearDown(baru.db.close);
+
+      await baru.backup.pulihkan(berkasBackup.path);
+
+      final produk = (await ProdukStore(baru.db).cari(kopiId))!;
+      expect(produk.nama, 'Kopi Bubuk');
+      expect(produk.kategoriId, isNotNull);
+      expect(produk.hargaKatalog, 15000);
+      expect(produk.satuan, 'pcs');
+      expect(produk.aktif, isTrue);
+
+      final kategori = await KategoriStore(baru.db).watch().first;
+      expect([for (final satu in kategori) satu.nama], ['Minuman']);
+
+      // Stok dihitung dari catatan pergerakan yang ikut dipulihkan.
+      final stok = await StokStore(baru.db).watchTotalPerProduk().first;
+      expect(stok[kopiId], 8000);
+
+      final laporan = await LaporanStore(
+        baru.db,
+      ).watchHarian(DateTime(2026, 10, 17)).first;
+      expect(laporan.jumlahTransaksi, 1);
+      expect(laporan.omzet, 30000);
+      expect(laporan.transaksi.single.nomor, 'TRX-20261017-001');
+
+      final toko = await TokoStore(baru.db).baca();
+      expect(toko?.nama, 'Warung Bu Sri');
+
+      // Foto Produk ikut pulih, dan rujukannya menunjuk folder perangkat ini.
+      expect(produk.foto, isNotNull);
+      final foto = File(produk.foto!);
+      expect(p.basename(foto.path), 'produk-1.png');
+      expect(p.dirname(foto.path), p.join(folderKerja.path, 'gambar-baru'));
+      expect(foto.readAsBytesSync(), [137, 80, 78, 71, 1, 2, 3]);
+
+      final qris = await QrisStore(baru.db).baca();
+      expect(qris, isNotNull);
+      expect(p.dirname(qris!), p.join(folderKerja.path, 'gambar-baru'));
+      expect(File(qris).readAsBytesSync(), [137, 80, 78, 71, 1, 2, 3]);
+    });
+
+    test('impor menimpa data yang sedang ada, bukan menambah', () async {
+      await ProdukStore(database).tambah(
+        nama: 'Produk Setelah Backup',
+        hargaKatalog: 5000,
+        satuan: 'pcs',
+        kategoriId: null,
+      );
+
+      await backup.pulihkan(berkasBackup.path);
+
+      final daftar = await ProdukStore(database).watch().first;
+      expect([for (final satu in daftar) satu.nama], ['Kopi Bubuk']);
+      final stok = await StokStore(database).watchTotalPerProduk().first;
+      expect(stok, {kopiId: 8000});
+    });
+
+    test('berkas yang bukan Backup ditolak tanpa merusak data', () async {
+      final bukanBackup = File(p.join(folderKerja.path, 'catatan.txt'))
+        ..writeAsStringSync('ini bukan backup');
+
+      await expectLater(
+        backup.pulihkan(bukanBackup.path),
+        throwsA(
+          isA<BackupTidakSahException>().having(
+            (salah) => salah.pesan,
+            'pesan',
+            'Berkas ini bukan Backup kasir.',
+          ),
+        ),
+      );
+
+      final daftar = await ProdukStore(database).watch().first;
+      expect([for (final satu in daftar) satu.nama], ['Kopi Bubuk']);
+      final laporan = await LaporanStore(
+        database,
+      ).watchHarian(DateTime(2026, 10, 17)).first;
+      expect(laporan.jumlahTransaksi, 1);
+      expect(await backup.terakhir(), DateTime(2026, 10, 17, 9, 30));
+    });
+
+    test('ZIP tanpa backup.json ditolak', () async {
+      final arsip = Archive()
+        ..addFile(ArchiveFile('gambar/qris.png', 3, [1, 2, 3]));
+      final berkas = File(p.join(folderKerja.path, 'bukan-backup.zip'))
+        ..writeAsBytesSync(ZipEncoder().encode(arsip));
+
+      await expectLater(
+        backup.pulihkan(berkas.path),
+        throwsA(isA<BackupTidakSahException>()),
+      );
+      final daftar = await ProdukStore(database).watch().first;
+      expect(daftar, hasLength(1));
+    });
+
+    test('Backup dari aplikasi versi lebih baru ditolak', () async {
+      final isi = {
+        'versi': IsiBackup.versiSekarang + 1,
+        'dibuat': DateTime(2026, 10, 17, 9, 30).toIso8601String(),
+        'tabel': {
+          for (final tabel in IsiBackup.urutanTabel) tabel: <Object?>[],
+        },
+      };
+      final bytes = utf8.encode(jsonEncode(isi));
+      final arsip = Archive()
+        ..addFile(ArchiveFile(BackupStore.namaBerkasJson, bytes.length, bytes));
+      final berkas = File(p.join(folderKerja.path, 'masa-depan.zip'))
+        ..writeAsBytesSync(ZipEncoder().encode(arsip));
+
+      await expectLater(
+        backup.pulihkan(berkas.path),
+        throwsA(
+          isA<BackupTidakSahException>().having(
+            (salah) => salah.pesan,
+            'pesan',
+            contains('versi lebih baru'),
+          ),
+        ),
+      );
+      final daftar = await ProdukStore(database).watch().first;
+      expect(daftar, hasLength(1));
+    });
+  });
+
   group('layar Pengaturan', () {
     void layarTinggi(WidgetTester tester) {
       tester.view.physicalSize = const Size(500, 2000);
@@ -264,6 +439,7 @@ void main() {
             gambarStoreProvider.overrideWithValue(gambar),
             pembagiProvider.overrideWithValue(pembagi),
             backupStoreProvider.overrideWithValue(backupPalsu),
+            pemilihBerkasProvider.overrideWithValue(pemilihBerkas),
           ],
         ),
       );
@@ -303,6 +479,61 @@ void main() {
         tester.widget<Text>(find.byKey(const Key('backup-terakhir'))).data,
         'Backup terakhir: 17/10/2026 09:30',
       );
+
+      await tutupAplikasi(tester);
+    });
+
+    testWidgets('impor meminta konfirmasi lebih dulu', (tester) async {
+      await bukaPengaturan(tester);
+      await tester.tap(find.byKey(const Key('backup-impor')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Timpa seluruh data?'), findsOneWidget);
+
+      // Membatalkan tidak mengubah apa pun.
+      await tester.tap(find.byKey(const Key('impor-batal')));
+      await tester.pumpAndSettle();
+      expect(backupPalsu.dipulihkan, isNull);
+      expect(find.text('Data berhasil dipulihkan'), findsNothing);
+
+      await tester.tap(find.byKey(const Key('backup-impor')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('impor-timpa')));
+      await tester.pumpAndSettle();
+
+      expect(backupPalsu.dipulihkan, pemilihBerkas.path);
+      expect(find.text('Data berhasil dipulihkan'), findsOneWidget);
+
+      await tutupAplikasi(tester);
+    });
+
+    testWidgets('berkas yang bukan Backup ditolak dengan pesan jelas', (
+      tester,
+    ) async {
+      backupPalsu.tolak = const BackupTidakSahException(
+        'Berkas ini bukan Backup kasir.',
+      );
+      await bukaPengaturan(tester);
+      await tester.tap(find.byKey(const Key('backup-impor')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('impor-timpa')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Berkas ini bukan Backup kasir.'), findsOneWidget);
+
+      await tutupAplikasi(tester);
+    });
+
+    testWidgets('membatalkan pemilih berkas tidak melakukan apa pun', (
+      tester,
+    ) async {
+      pemilihBerkas.path = null;
+      await bukaPengaturan(tester);
+      await tester.tap(find.byKey(const Key('backup-impor')));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Timpa seluruh data?'), findsNothing);
+      expect(backupPalsu.dipulihkan, isNull);
 
       await tutupAplikasi(tester);
     });

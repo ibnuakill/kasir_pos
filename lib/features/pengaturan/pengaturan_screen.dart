@@ -4,9 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/providers.dart';
 import 'package:kasir/core/waktu.dart';
+import 'package:kasir/data/backup_store.dart';
 import 'package:kasir/data/qris_store.dart';
 import 'package:kasir/data/toko_store.dart';
+import 'package:kasir/features/kasir/keranjang.dart';
+import 'package:kasir/features/laporan/laporan_providers.dart';
 import 'package:kasir/features/pin/pin_gate.dart';
+import 'package:kasir/features/produk/produk_providers.dart';
+import 'package:kasir/features/stok/stok_providers.dart';
 
 /// Isi Pengaturan. Tab ini hanya sampai ke sini setelah PIN benar, dijaga oleh
 /// gerbang di [HomeShell].
@@ -46,6 +51,7 @@ class _IsiPengaturan extends ConsumerStatefulWidget {
 class _IsiPengaturanState extends ConsumerState<_IsiPengaturan> {
   final _formKey = GlobalKey<FormState>();
   bool _membuatBackup = false;
+  bool _memulihkan = false;
   late final _nama = TextEditingController(text: widget.toko.nama);
   late final _alamat = TextEditingController(text: widget.toko.alamat);
 
@@ -120,6 +126,72 @@ class _IsiPengaturanState extends ConsumerState<_IsiPengaturan> {
       );
     } finally {
       if (mounted) setState(() => _membuatBackup = false);
+    }
+  }
+
+  /// Memulihkan seluruh data dari berkas Backup pilihan kasir (user story 74).
+  ///
+  /// Data yang ada baru ditimpa setelah kasir menyetujuinya (user story 75);
+  /// membatalkan konfirmasi tidak mengubah apa pun.
+  Future<void> _impor() async {
+    final path = await ref.read(pemilihBerkasProvider).pilihBackup();
+    if (path == null || !mounted) return;
+
+    final setuju = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Timpa seluruh data?'),
+        content: const Text(
+          'Semua Produk, riwayat Stok, Transaksi, dan gambar yang ada sekarang '
+          'akan diganti dengan isi berkas Backup. Tindakan ini tidak bisa '
+          'dibatalkan.',
+        ),
+        actions: [
+          TextButton(
+            key: const Key('impor-batal'),
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            key: const Key('impor-timpa'),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('Timpa Data'),
+          ),
+        ],
+      ),
+    );
+    if (setuju != true || !mounted) return;
+
+    setState(() => _memulihkan = true);
+    try {
+      await ref.read(backupStoreProvider).pulihkan(path);
+      if (!mounted) return;
+
+      // Seluruh tampilan dibaca ulang dari database yang baru ditimpa.
+      ref.invalidate(tokoProvider);
+      ref.invalidate(gambarQrisProvider);
+      ref.invalidate(backupTerakhirProvider);
+      ref.invalidate(daftarProdukProvider);
+      ref.invalidate(daftarKategoriProvider);
+      ref.invalidate(totalStokProvider);
+      ref.invalidate(laporanHarianProvider);
+      ref.invalidate(keranjangProvider);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Data berhasil dipulihkan')),
+      );
+    } on BackupTidakSahException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.pesan)));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Backup gagal dipulihkan')),
+      );
+    } finally {
+      if (mounted) setState(() => _memulihkan = false);
     }
   }
 
@@ -249,7 +321,7 @@ class _IsiPengaturanState extends ConsumerState<_IsiPengaturan> {
             children: [
               FilledButton.tonal(
                 key: const Key('backup-ekspor'),
-                onPressed: _membuatBackup ? null : _ekspor,
+                onPressed: _membuatBackup || _memulihkan ? null : _ekspor,
                 child: _membuatBackup
                     ? const SizedBox(
                         height: 18,
@@ -257,6 +329,18 @@ class _IsiPengaturanState extends ConsumerState<_IsiPengaturan> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : const Text('Ekspor Backup'),
+              ),
+              const SizedBox(width: 8),
+              OutlinedButton(
+                key: const Key('backup-impor'),
+                onPressed: _membuatBackup || _memulihkan ? null : _impor,
+                child: _memulihkan
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Impor Backup'),
               ),
             ],
           ),

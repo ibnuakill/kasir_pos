@@ -44,6 +44,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
   archive: ^4.5.2
+  file_selector: ^1.1.0
 
 dev_dependencies:
   flutter_test:

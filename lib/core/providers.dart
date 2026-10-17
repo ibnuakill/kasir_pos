@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/clock.dart';
+import 'package:kasir/core/pemilih_berkas.dart';
 import 'package:kasir/core/pemilih_gambar.dart';
 import 'package:kasir/core/pembagi.dart';
 import 'package:kasir/data/backup_store.dart';
@@ -32,7 +33,7 @@ final gambarStoreProvider = Provider<GambarStore>(
 
 /// Pembuat dan pembaca Backup ZIP. Di test diarahkan ke folder sementara supaya
 /// tidak bergantung pada folder sementara perangkat.
-final backupStoreProvider = Provider<PembuatBackup>(
+final backupStoreProvider = Provider<BackupKasir>(
   (ref) => BackupStore(
     ref.watch(databaseProvider),
     ref.watch(gambarStoreProvider),
@@ -42,6 +43,12 @@ final backupStoreProvider = Provider<PembuatBackup>(
 /// Tanggal Backup terakhir yang dibuat, atau null bila belum pernah.
 final backupTerakhirProvider = FutureProvider<DateTime?>(
   (ref) => ref.watch(backupStoreProvider).terakhir(),
+);
+
+/// Pintu masuk berkas Backup dari penyimpanan perangkat. Di test diganti
+/// pemilih palsu.
+final pemilihBerkasProvider = Provider<PemilihBerkas>(
+  (ref) => const PemilihBerkasPerangkat(),
 );
 
 /// Pintu masuk gambar dari galeri atau kamera. Di test diganti pemilih palsu.

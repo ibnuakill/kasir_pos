@@ -55,6 +55,16 @@ class GambarStore {
     ];
   }
 
+  /// Menghapus semua berkas gambar. Dipakai Impor Backup supaya tidak ada
+  /// gambar lama yang tertinggal saat seluruh data ditimpa.
+  Future<void> bersihkan() async {
+    final folder = await _folder();
+    if (!await folder.exists()) return;
+    await for (final berkas in folder.list()) {
+      if (berkas is File) await berkas.delete();
+    }
+  }
+
   /// Folder tempat gambar disimpan. Dipakai Backup untuk menaruh kembali
   /// gambar hasil Impor.
   Future<Directory> folder() => _folder();
