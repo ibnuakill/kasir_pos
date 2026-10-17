@@ -4,4 +4,5 @@ abstract final class SettingKeys {
   static const namaToko = 'toko.nama';
   static const alamatToko = 'toko.alamat';
   static const pinHash = 'pin.hash';
+  static const gambarQris = 'qris.gambar';
 }

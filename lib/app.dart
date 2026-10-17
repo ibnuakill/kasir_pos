@@ -12,10 +12,19 @@ const _seedColor = Color(0xFF2E7D32);
 /// seluruh aplikasi bisa dijalankan di test terhadap database in-memory dengan
 /// waktu tetap.
 class KasirApp extends StatelessWidget {
-  const KasirApp({super.key, required this.database, required this.clock});
+  const KasirApp({
+    super.key,
+    required this.database,
+    required this.clock,
+    this.overrides = const [],
+  });
 
   final AppDatabase database;
   final Clock clock;
+
+  /// Pengganti tambahan untuk test: pemilih gambar palsu, folder gambar
+  /// sementara, dan sebagainya.
+  final List<Override> overrides;
 
   @override
   Widget build(BuildContext context) {
@@ -23,6 +32,7 @@ class KasirApp extends StatelessWidget {
       overrides: [
         databaseProvider.overrideWithValue(database),
         clockProvider.overrideWithValue(clock),
+        ...overrides,
       ],
       child: MaterialApp(
         title: 'Kasir',
