@@ -49,7 +49,7 @@ class _BarTotal extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final baris = ref.watch(keranjangProvider);
+    final isi = ref.watch(keranjangProvider);
     final teks = Theme.of(context).textTheme;
 
     return Material(
@@ -70,11 +70,11 @@ class _BarTotal extends ConsumerWidget {
             children: [
               Icon(Icons.shopping_cart_outlined, size: 20, color: teks.bodySmall?.color),
               const SizedBox(width: 8),
-              Text('${baris.length} item', style: teks.bodyMedium),
+              Text('${isi.jumlahBaris} item', style: teks.bodyMedium),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
-                  'Total ${formatRupiah(subtotalKeranjang(baris))}',
+                  'Total ${formatRupiah(isi.total)}',
                   key: const Key('kasir-total-bar'),
                   textAlign: TextAlign.end,
                   style: teks.titleMedium,

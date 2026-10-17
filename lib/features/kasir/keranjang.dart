@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kasir/core/diskon.dart';
 import 'package:kasir/core/kuantitas.dart';
 import 'package:kasir/data/database.dart';
 
@@ -20,48 +21,81 @@ class BarisKeranjang {
       BarisKeranjang(produk: produk, kuantitasMili: mili);
 }
 
+/// Isi Keranjang beserta Diskon yang menempel padanya. Diskon ikut di sini
+/// supaya Subtotal, Diskon, dan Total tidak pernah saling bertentangan.
+class IsiKeranjang {
+  const IsiKeranjang({this.baris = const [], this.diskon});
+
+  final List<BarisKeranjang> baris;
+  final Diskon? diskon;
+
+  int get subtotal => baris.fold(0, (total, satu) => total + satu.subtotal);
+  int get potongan => hitungPotongan(subtotal, diskon);
+  int get total => subtotal - potongan;
+  int get jumlahBaris => baris.length;
+  bool get kosong => baris.isEmpty;
+}
+
 /// Keranjang yang sedang disusun. Masih di memori pada tiket ini; tiket 14
 /// yang memindahkannya ke database supaya bertahan saat aplikasi ditutup.
-class Keranjang extends Notifier<List<BarisKeranjang>> {
+class Keranjang extends Notifier<IsiKeranjang> {
   @override
-  List<BarisKeranjang> build() => const [];
+  IsiKeranjang build() => const IsiKeranjang();
 
   void tambah(ProdukData produk) {
-    final posisi = state.indexWhere((baris) => baris.produk.id == produk.id);
+    final posisi = state.baris.indexWhere(
+      (baris) => baris.produk.id == produk.id,
+    );
     if (posisi == -1) {
-      state = [
-        ...state,
-        BarisKeranjang(produk: produk, kuantitasMili: skalaKuantitas),
-      ];
+      state = IsiKeranjang(
+        baris: [
+          ...state.baris,
+          BarisKeranjang(produk: produk, kuantitasMili: skalaKuantitas),
+        ],
+        diskon: state.diskon,
+      );
       return;
     }
 
-    final baris = state[posisi];
-    state = [...state]
-      ..[posisi] = baris.denganKuantitas(baris.kuantitasMili + skalaKuantitas);
+    final baris = state.baris[posisi];
+    state = IsiKeranjang(
+      baris: [...state.baris]
+        ..[posisi] = baris.denganKuantitas(
+          baris.kuantitasMili + skalaKuantitas,
+        ),
+      diskon: state.diskon,
+    );
   }
 
   void ubahKuantitas(int produkId, int kuantitasMili) {
-    state = [
-      for (final baris in state)
-        if (baris.produk.id == produkId)
-          baris.denganKuantitas(kuantitasMili)
-        else
-          baris,
-    ];
+    state = IsiKeranjang(
+      baris: [
+        for (final baris in state.baris)
+          if (baris.produk.id == produkId)
+            baris.denganKuantitas(kuantitasMili)
+          else
+            baris,
+      ],
+      diskon: state.diskon,
+    );
   }
 
   void hapus(int produkId) {
-    state = [
-      for (final baris in state)
+    final sisa = [
+      for (final baris in state.baris)
         if (baris.produk.id != produkId) baris,
     ];
+    // Keranjang kosong berarti transaksi baru: Diskon lama tidak boleh
+    // menempel diam-diam pada belanja berikutnya.
+    state = IsiKeranjang(baris: sisa, diskon: sisa.isEmpty ? null : state.diskon);
+  }
+
+  /// `null` berarti Diskon dihapus dan Total kembali sama dengan Subtotal.
+  void pasangDiskon(Diskon? diskon) {
+    state = IsiKeranjang(baris: state.baris, diskon: diskon);
   }
 }
 
-final keranjangProvider = NotifierProvider<Keranjang, List<BarisKeranjang>>(
+final keranjangProvider = NotifierProvider<Keranjang, IsiKeranjang>(
   Keranjang.new,
 );
-
-int subtotalKeranjang(List<BarisKeranjang> baris) =>
-    baris.fold(0, (total, satu) => total + satu.subtotal);

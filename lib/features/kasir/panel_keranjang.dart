@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kasir/core/diskon.dart';
 import 'package:kasir/core/kuantitas.dart';
 import 'package:kasir/core/rupiah.dart';
+import 'package:kasir/features/kasir/diskon_dialog.dart';
 import 'package:kasir/features/kasir/keranjang.dart';
 import 'package:kasir/features/stok/stok_rules.dart';
 
@@ -13,7 +15,7 @@ class PanelKeranjang extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final baris = ref.watch(keranjangProvider);
+    final isi = ref.watch(keranjangProvider);
     final teks = Theme.of(context).textTheme;
 
     return Column(
@@ -24,32 +26,78 @@ class PanelKeranjang extends ConsumerWidget {
             children: [
               Text('Keranjang', style: teks.titleMedium),
               const Spacer(),
-              Text('${baris.length} item'),
+              Text('${isi.jumlahBaris} item'),
             ],
           ),
         ),
         const Divider(height: 1),
         Expanded(
-          child: baris.isEmpty
+          child: isi.kosong
               ? const Center(child: Text('Keranjang masih kosong'))
               : ListView.builder(
-                  itemCount: baris.length,
+                  itemCount: isi.baris.length,
                   itemBuilder: (context, index) => _BarisKeranjangTile(
-                    key: ValueKey(baris[index].produk.id),
-                    baris: baris[index],
+                    key: ValueKey(isi.baris[index].produk.id),
+                    baris: isi.baris[index],
                   ),
                 ),
         ),
         const Divider(height: 1),
         Padding(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           child: Row(
             children: [
               Text('Subtotal', style: teks.titleMedium),
               const Spacer(),
               Text(
-                formatRupiah(subtotalKeranjang(baris)),
+                formatRupiah(isi.subtotal),
                 key: const Key('keranjang-subtotal'),
+                style: teks.titleMedium,
+              ),
+            ],
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          child: InkWell(
+            key: const Key('kasir-atur-diskon'),
+            onTap: () => _aturDiskon(context, ref, isi),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      isi.diskon == null ||
+                              isi.diskon!.jenis == JenisDiskon.nominal
+                          ? 'Diskon'
+                          : 'Diskon (${formatDiskon(isi.diskon!)})',
+                      style: teks.bodyMedium,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    formatRupiah(isi.potongan),
+                    key: const Key('keranjang-diskon'),
+                    style: teks.bodyMedium,
+                  ),
+                  const SizedBox(width: 6),
+                  const Icon(Icons.edit_outlined, size: 16),
+                ],
+              ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Row(
+            children: [
+              Text('Total', style: teks.titleMedium),
+              const Spacer(),
+              Text(
+                formatRupiah(isi.total),
+                key: const Key('keranjang-total'),
                 style: teks.titleMedium,
               ),
             ],
@@ -57,6 +105,23 @@ class PanelKeranjang extends ConsumerWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _aturDiskon(
+    BuildContext context,
+    WidgetRef ref,
+    IsiKeranjang isi,
+  ) async {
+    final hasil = await tanyaDiskon(
+      context,
+      subtotal: isi.subtotal,
+      sekarang: isi.diskon,
+    );
+    if (hasil == null) return;
+
+    ref
+        .read(keranjangProvider.notifier)
+        .pasangDiskon(hasil.hapus ? null : hasil.diskon);
   }
 }
 

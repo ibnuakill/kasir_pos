@@ -232,4 +232,100 @@ void main() {
 
     await tutupAplikasi(tester);
   });
+
+  Future<void> aturDiskon(
+    WidgetTester tester, {
+    required String nilai,
+    bool persen = false,
+  }) async {
+    await tester.tap(find.byKey(const Key('kasir-atur-diskon')));
+    await tester.pumpAndSettle();
+
+    if (persen) {
+      await tester.tap(find.byKey(const Key('diskon-jenis-persen')));
+      await tester.pumpAndSettle();
+    }
+
+    await tester.enterText(find.byKey(const Key('diskon-nilai')), nilai);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('diskon-simpan')));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('Diskon nominal mengurangi Total', (tester) async {
+    await bukaKasir(tester);
+    await tekanProduk(tester, kopiId);
+
+    await aturDiskon(tester, nilai: '5000');
+
+    expect(teksKunci(tester, 'keranjang-subtotal'), 'Rp15.000');
+    expect(teksKunci(tester, 'keranjang-diskon'), 'Rp5.000');
+    expect(teksKunci(tester, 'keranjang-total'), 'Rp10.000');
+
+    await tutupAplikasi(tester);
+  });
+
+  testWidgets('Diskon persen dihitung dari Subtotal', (tester) async {
+    await bukaKasir(tester);
+    await tekanProduk(tester, kopiId);
+
+    await aturDiskon(tester, nilai: '10', persen: true);
+
+    expect(teksKunci(tester, 'keranjang-diskon'), 'Rp1.500');
+    expect(teksKunci(tester, 'keranjang-total'), 'Rp13.500');
+    expect(find.textContaining('10%'), findsOneWidget);
+
+    await tutupAplikasi(tester);
+  });
+
+  testWidgets('Diskon melebihi Subtotal membuat Total nol, bukan minus', (
+    tester,
+  ) async {
+    await bukaKasir(tester);
+    await tekanProduk(tester, kopiId);
+
+    await aturDiskon(tester, nilai: '99999');
+
+    expect(teksKunci(tester, 'keranjang-diskon'), 'Rp15.000');
+    expect(teksKunci(tester, 'keranjang-total'), 'Rp0');
+
+    await tutupAplikasi(tester);
+  });
+
+  testWidgets('Diskon bisa dihapus sehingga Total kembali ke Subtotal', (
+    tester,
+  ) async {
+    await bukaKasir(tester);
+    await tekanProduk(tester, kopiId);
+    await aturDiskon(tester, nilai: '5000');
+
+    await tester.tap(find.byKey(const Key('kasir-atur-diskon')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('diskon-hapus')));
+    await tester.pumpAndSettle();
+
+    expect(teksKunci(tester, 'keranjang-diskon'), 'Rp0');
+    expect(teksKunci(tester, 'keranjang-total'), 'Rp15.000');
+    expect(find.textContaining('10%'), findsNothing);
+
+    await tutupAplikasi(tester);
+  });
+
+  testWidgets('Diskon ikut hilang saat baris terakhir dihapus', (tester) async {
+    await bukaKasir(tester);
+    await tekanProduk(tester, kopiId);
+    await aturDiskon(tester, nilai: '5000');
+
+    await tester.tap(find.byKey(Key('keranjang-hapus-$kopiId')));
+    await tester.pumpAndSettle();
+
+    expect(teksKunci(tester, 'keranjang-diskon'), 'Rp0');
+    expect(teksKunci(tester, 'keranjang-total'), 'Rp0');
+
+    // Belanja berikutnya tidak mewarisi potongan lama.
+    await tekanProduk(tester, kopiId);
+    expect(teksKunci(tester, 'keranjang-total'), 'Rp15.000');
+
+    await tutupAplikasi(tester);
+  });
 }
