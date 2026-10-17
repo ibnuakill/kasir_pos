@@ -6,6 +6,8 @@ import 'package:kasir/data/database.dart';
 import 'package:kasir/data/pin_store.dart';
 import 'package:kasir/data/toko_store.dart';
 
+import 'bantuan.dart';
+
 void main() {
   late AppDatabase database;
 
@@ -39,7 +41,7 @@ void main() {
 
     await tester.tap(find.text('Produk').last);
     await tester.pumpAndSettle();
-    expect(find.text('Belum ada produk'), findsOneWidget);
+    expect(find.text('Belum ada produk yang cocok'), findsOneWidget);
 
     await tester.tap(find.text('Laporan').last);
     await tester.pumpAndSettle();
@@ -55,6 +57,8 @@ void main() {
     await tester.tap(find.text('Kasir').last);
     await tester.pumpAndSettle();
     expect(find.text('Keranjang masih kosong'), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('aplikasi dibangun ulang di atas database yang sama', (
@@ -66,6 +70,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Keranjang masih kosong'), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('tema mengikuti mode gelap dan terang perangkat', (tester) async {
@@ -85,5 +91,7 @@ void main() {
       Theme.of(tester.element(find.text('Keranjang masih kosong'))).brightness,
       Brightness.light,
     );
+
+    await tutupAplikasi(tester);
   });
 }
