@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kasir/core/kuantitas.dart';
 import 'package:kasir/core/rupiah.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/features/produk/produk_form_screen.dart';
 import 'package:kasir/features/produk/produk_providers.dart';
+import 'package:kasir/features/stok/stok_providers.dart';
 
 /// Daftar katalog. Produk nonaktif disembunyikan sampai diminta, karena yang
 /// dicari kasir sehari-hari adalah barang yang masih dijual.
@@ -35,6 +37,7 @@ class _ProdukScreenState extends ConsumerState<ProdukScreen> {
     final produk = ref.watch(daftarProdukProvider);
     final kategori = ref.watch(daftarKategoriProvider).valueOrNull ?? const [];
     final namaKategori = {for (final k in kategori) k.id: k.nama};
+    final stok = ref.watch(totalStokProvider).valueOrNull ?? const <int, int>{};
 
     // Penyaringan di sini, bukan di query: satu langganan untuk seluruh katalog.
     final kata = _cari.text.trim().toLowerCase();
@@ -103,6 +106,7 @@ class _ProdukScreenState extends ConsumerState<ProdukScreen> {
                         [
                           formatRupiah(item.hargaKatalog),
                           'per ${item.satuan}',
+                          'stok ${formatKuantitas(stok[item.id] ?? 0)}',
                           if (namaKategori[item.kategoriId] != null)
                             namaKategori[item.kategoriId]!,
                         ].join(' · '),

@@ -44,7 +44,25 @@ class Produk extends Table {
   BoolColumn get aktif => boolean().withDefault(const Constant(true))();
 }
 
-@DriftDatabase(tables: [AppSettings, Kategori, Produk])
+/// Jenis pergerakan Stok. Disimpan sebagai teks supaya Backup tetap terbaca
+/// manusia dan urutan enum tidak pernah menjadi bagian dari data.
+enum JenisPergerakan { tambahStok, koreksiStok, penjualan, pembatalan }
+
+/// Catatan pergerakan Stok. Stok itu sendiri tidak disimpan di mana pun: ia
+/// adalah penjumlahan kolom [jumlahMili] milik satu Produk (ADR-0003).
+class PergerakanStok extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get produkId => integer().references(Produk, #id)();
+
+  TextColumn get jenis => textEnum<JenisPergerakan>()();
+
+  /// Perubahan berskala seribu: 2500 berarti 2,5. Negatif untuk Stok keluar.
+  IntColumn get jumlahMili => integer()();
+
+  DateTimeColumn get waktu => dateTime()();
+}
+
+@DriftDatabase(tables: [AppSettings, Kategori, Produk, PergerakanStok])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
@@ -52,7 +70,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.inMemory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -66,6 +84,9 @@ class AppDatabase extends _$AppDatabase {
       if (from < 2) {
         await m.createTable(kategori);
         await m.createTable(produk);
+      }
+      if (from < 3) {
+        await m.createTable(pergerakanStok);
       }
     },
     beforeOpen: (details) async {

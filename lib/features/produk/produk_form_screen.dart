@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/rupiah.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/features/produk/produk_providers.dart';
+import 'package:kasir/features/stok/bagian_stok.dart';
 
 /// Formulir tambah dan ubah Produk. Tidak ada tombol hapus: Produk hanya bisa
 /// dinonaktifkan (ADR-0004).
@@ -202,6 +203,7 @@ class _ProdukFormScreenState extends ConsumerState<ProdukFormScreen> {
                   widget.produk!.aktif ? 'Nonaktifkan' : 'Aktifkan lagi',
                 ),
               ),
+              BagianStok(produk: widget.produk!),
             ],
           ],
         ),

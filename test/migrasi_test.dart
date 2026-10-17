@@ -4,6 +4,7 @@ import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/data/produk_store.dart';
+import 'package:kasir/data/stok_store.dart';
 import 'package:kasir/data/toko_store.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
@@ -34,10 +35,18 @@ void main() {
     expect(toko, isNotNull);
     expect(toko!.nama, 'Warung Lama');
 
-    // Tabel yang baru ditambahkan di versi 2 ikut terpasang.
-    await ProdukStore(
+    // Tabel yang baru ditambahkan di versi berikutnya ikut terpasang.
+    final produk = await ProdukStore(
       database,
     ).tambah(nama: 'Kopi', hargaKatalog: 15000, satuan: 'pcs');
     expect(await ProdukStore(database).watch().first, hasLength(1));
+
+    await StokStore(
+      database,
+    ).tambahStok(produk, jumlahMili: 5000, waktu: DateTime(2026, 10, 17));
+    expect(
+      (await StokStore(database).watchTotalPerProduk().first)[produk],
+      5000,
+    );
   });
 }

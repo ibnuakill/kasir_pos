@@ -869,12 +869,376 @@ class ProdukCompanion extends UpdateCompanion<ProdukData> {
   }
 }
 
+class $PergerakanStokTable extends PergerakanStok
+    with TableInfo<$PergerakanStokTable, PergerakanStokData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PergerakanStokTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+    'id',
+    aliasedName,
+    false,
+    hasAutoIncrement: true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'PRIMARY KEY AUTOINCREMENT',
+    ),
+  );
+  static const VerificationMeta _produkIdMeta = const VerificationMeta(
+    'produkId',
+  );
+  @override
+  late final GeneratedColumn<int> produkId = GeneratedColumn<int>(
+    'produk_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'REFERENCES produk (id)',
+    ),
+  );
+  @override
+  late final GeneratedColumnWithTypeConverter<JenisPergerakan, String> jenis =
+      GeneratedColumn<String>(
+        'jenis',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      ).withConverter<JenisPergerakan>($PergerakanStokTable.$converterjenis);
+  static const VerificationMeta _jumlahMiliMeta = const VerificationMeta(
+    'jumlahMili',
+  );
+  @override
+  late final GeneratedColumn<int> jumlahMili = GeneratedColumn<int>(
+    'jumlah_mili',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _waktuMeta = const VerificationMeta('waktu');
+  @override
+  late final GeneratedColumn<DateTime> waktu = GeneratedColumn<DateTime>(
+    'waktu',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    produkId,
+    jenis,
+    jumlahMili,
+    waktu,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pergerakan_stok';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PergerakanStokData> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('produk_id')) {
+      context.handle(
+        _produkIdMeta,
+        produkId.isAcceptableOrUnknown(data['produk_id']!, _produkIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_produkIdMeta);
+    }
+    if (data.containsKey('jumlah_mili')) {
+      context.handle(
+        _jumlahMiliMeta,
+        jumlahMili.isAcceptableOrUnknown(data['jumlah_mili']!, _jumlahMiliMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_jumlahMiliMeta);
+    }
+    if (data.containsKey('waktu')) {
+      context.handle(
+        _waktuMeta,
+        waktu.isAcceptableOrUnknown(data['waktu']!, _waktuMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_waktuMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PergerakanStokData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PergerakanStokData(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}id'],
+      )!,
+      produkId: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}produk_id'],
+      )!,
+      jenis: $PergerakanStokTable.$converterjenis.fromSql(
+        attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}jenis'],
+        )!,
+      ),
+      jumlahMili: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}jumlah_mili'],
+      )!,
+      waktu: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}waktu'],
+      )!,
+    );
+  }
+
+  @override
+  $PergerakanStokTable createAlias(String alias) {
+    return $PergerakanStokTable(attachedDatabase, alias);
+  }
+
+  static JsonTypeConverter2<JenisPergerakan, String, String> $converterjenis =
+      const EnumNameConverter<JenisPergerakan>(JenisPergerakan.values);
+}
+
+class PergerakanStokData extends DataClass
+    implements Insertable<PergerakanStokData> {
+  final int id;
+  final int produkId;
+  final JenisPergerakan jenis;
+
+  /// Perubahan berskala seribu: 2500 berarti 2,5. Negatif untuk Stok keluar.
+  final int jumlahMili;
+  final DateTime waktu;
+  const PergerakanStokData({
+    required this.id,
+    required this.produkId,
+    required this.jenis,
+    required this.jumlahMili,
+    required this.waktu,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['produk_id'] = Variable<int>(produkId);
+    {
+      map['jenis'] = Variable<String>(
+        $PergerakanStokTable.$converterjenis.toSql(jenis),
+      );
+    }
+    map['jumlah_mili'] = Variable<int>(jumlahMili);
+    map['waktu'] = Variable<DateTime>(waktu);
+    return map;
+  }
+
+  PergerakanStokCompanion toCompanion(bool nullToAbsent) {
+    return PergerakanStokCompanion(
+      id: Value(id),
+      produkId: Value(produkId),
+      jenis: Value(jenis),
+      jumlahMili: Value(jumlahMili),
+      waktu: Value(waktu),
+    );
+  }
+
+  factory PergerakanStokData.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PergerakanStokData(
+      id: serializer.fromJson<int>(json['id']),
+      produkId: serializer.fromJson<int>(json['produkId']),
+      jenis: $PergerakanStokTable.$converterjenis.fromJson(
+        serializer.fromJson<String>(json['jenis']),
+      ),
+      jumlahMili: serializer.fromJson<int>(json['jumlahMili']),
+      waktu: serializer.fromJson<DateTime>(json['waktu']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'produkId': serializer.toJson<int>(produkId),
+      'jenis': serializer.toJson<String>(
+        $PergerakanStokTable.$converterjenis.toJson(jenis),
+      ),
+      'jumlahMili': serializer.toJson<int>(jumlahMili),
+      'waktu': serializer.toJson<DateTime>(waktu),
+    };
+  }
+
+  PergerakanStokData copyWith({
+    int? id,
+    int? produkId,
+    JenisPergerakan? jenis,
+    int? jumlahMili,
+    DateTime? waktu,
+  }) => PergerakanStokData(
+    id: id ?? this.id,
+    produkId: produkId ?? this.produkId,
+    jenis: jenis ?? this.jenis,
+    jumlahMili: jumlahMili ?? this.jumlahMili,
+    waktu: waktu ?? this.waktu,
+  );
+  PergerakanStokData copyWithCompanion(PergerakanStokCompanion data) {
+    return PergerakanStokData(
+      id: data.id.present ? data.id.value : this.id,
+      produkId: data.produkId.present ? data.produkId.value : this.produkId,
+      jenis: data.jenis.present ? data.jenis.value : this.jenis,
+      jumlahMili: data.jumlahMili.present
+          ? data.jumlahMili.value
+          : this.jumlahMili,
+      waktu: data.waktu.present ? data.waktu.value : this.waktu,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PergerakanStokData(')
+          ..write('id: $id, ')
+          ..write('produkId: $produkId, ')
+          ..write('jenis: $jenis, ')
+          ..write('jumlahMili: $jumlahMili, ')
+          ..write('waktu: $waktu')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, produkId, jenis, jumlahMili, waktu);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PergerakanStokData &&
+          other.id == this.id &&
+          other.produkId == this.produkId &&
+          other.jenis == this.jenis &&
+          other.jumlahMili == this.jumlahMili &&
+          other.waktu == this.waktu);
+}
+
+class PergerakanStokCompanion extends UpdateCompanion<PergerakanStokData> {
+  final Value<int> id;
+  final Value<int> produkId;
+  final Value<JenisPergerakan> jenis;
+  final Value<int> jumlahMili;
+  final Value<DateTime> waktu;
+  const PergerakanStokCompanion({
+    this.id = const Value.absent(),
+    this.produkId = const Value.absent(),
+    this.jenis = const Value.absent(),
+    this.jumlahMili = const Value.absent(),
+    this.waktu = const Value.absent(),
+  });
+  PergerakanStokCompanion.insert({
+    this.id = const Value.absent(),
+    required int produkId,
+    required JenisPergerakan jenis,
+    required int jumlahMili,
+    required DateTime waktu,
+  }) : produkId = Value(produkId),
+       jenis = Value(jenis),
+       jumlahMili = Value(jumlahMili),
+       waktu = Value(waktu);
+  static Insertable<PergerakanStokData> custom({
+    Expression<int>? id,
+    Expression<int>? produkId,
+    Expression<String>? jenis,
+    Expression<int>? jumlahMili,
+    Expression<DateTime>? waktu,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (produkId != null) 'produk_id': produkId,
+      if (jenis != null) 'jenis': jenis,
+      if (jumlahMili != null) 'jumlah_mili': jumlahMili,
+      if (waktu != null) 'waktu': waktu,
+    });
+  }
+
+  PergerakanStokCompanion copyWith({
+    Value<int>? id,
+    Value<int>? produkId,
+    Value<JenisPergerakan>? jenis,
+    Value<int>? jumlahMili,
+    Value<DateTime>? waktu,
+  }) {
+    return PergerakanStokCompanion(
+      id: id ?? this.id,
+      produkId: produkId ?? this.produkId,
+      jenis: jenis ?? this.jenis,
+      jumlahMili: jumlahMili ?? this.jumlahMili,
+      waktu: waktu ?? this.waktu,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (produkId.present) {
+      map['produk_id'] = Variable<int>(produkId.value);
+    }
+    if (jenis.present) {
+      map['jenis'] = Variable<String>(
+        $PergerakanStokTable.$converterjenis.toSql(jenis.value),
+      );
+    }
+    if (jumlahMili.present) {
+      map['jumlah_mili'] = Variable<int>(jumlahMili.value);
+    }
+    if (waktu.present) {
+      map['waktu'] = Variable<DateTime>(waktu.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PergerakanStokCompanion(')
+          ..write('id: $id, ')
+          ..write('produkId: $produkId, ')
+          ..write('jenis: $jenis, ')
+          ..write('jumlahMili: $jumlahMili, ')
+          ..write('waktu: $waktu')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
   late final $AppSettingsTable appSettings = $AppSettingsTable(this);
   late final $KategoriTable kategori = $KategoriTable(this);
   late final $ProdukTable produk = $ProdukTable(this);
+  late final $PergerakanStokTable pergerakanStok = $PergerakanStokTable(this);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -883,6 +1247,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     appSettings,
     kategori,
     produk,
+    pergerakanStok,
   ];
 }
 
@@ -1287,6 +1652,24 @@ final class $$ProdukTableReferences
       manager.$state.copyWith(prefetchedData: [item]),
     );
   }
+
+  static MultiTypedResultKey<$PergerakanStokTable, List<PergerakanStokData>>
+  _pergerakanStokRefsTable(_$AppDatabase db) => MultiTypedResultKey.fromTable(
+    db.pergerakanStok,
+    aliasName: 'produk__id__pergerakan_stok__produk_id',
+  );
+
+  $$PergerakanStokTableProcessedTableManager get pergerakanStokRefs {
+    final manager = $$PergerakanStokTableTableManager(
+      $_db,
+      $_db.pergerakanStok,
+    ).filter((f) => f.produkId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_pergerakanStokRefsTable($_db));
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: cache),
+    );
+  }
 }
 
 class $$ProdukTableFilterComposer
@@ -1349,6 +1732,31 @@ class $$ProdukTableFilterComposer
           ),
     );
     return composer;
+  }
+
+  Expression<bool> pergerakanStokRefs(
+    Expression<bool> Function($$PergerakanStokTableFilterComposer f) f,
+  ) {
+    final $$PergerakanStokTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pergerakanStok,
+      getReferencedColumn: (t) => t.produkId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PergerakanStokTableFilterComposer(
+            $db: $db,
+            $table: $db.pergerakanStok,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
   }
 }
 
@@ -1468,6 +1876,31 @@ class $$ProdukTableAnnotationComposer
     );
     return composer;
   }
+
+  Expression<T> pergerakanStokRefs<T extends Object>(
+    Expression<T> Function($$PergerakanStokTableAnnotationComposer a) f,
+  ) {
+    final $$PergerakanStokTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.id,
+      referencedTable: $db.pergerakanStok,
+      getReferencedColumn: (t) => t.produkId,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$PergerakanStokTableAnnotationComposer(
+            $db: $db,
+            $table: $db.pergerakanStok,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return f(composer);
+  }
 }
 
 class $$ProdukTableTableManager
@@ -1483,7 +1916,7 @@ class $$ProdukTableTableManager
           $$ProdukTableUpdateCompanionBuilder,
           (ProdukData, $$ProdukTableReferences),
           ProdukData,
-          PrefetchHooks Function({bool kategoriId})
+          PrefetchHooks Function({bool kategoriId, bool pergerakanStokRefs})
         > {
   $$ProdukTableTableManager(_$AppDatabase db, $ProdukTable table)
     : super(
@@ -1538,7 +1971,357 @@ class $$ProdukTableTableManager
                     (e.readTable(table), $$ProdukTableReferences(db, table, e)),
               )
               .toList(),
-          prefetchHooksCallback: ({kategoriId = false}) {
+          prefetchHooksCallback:
+              ({kategoriId = false, pergerakanStokRefs = false}) {
+                return PrefetchHooks(
+                  db: db,
+                  explicitlyWatchedTables: [
+                    if (pergerakanStokRefs) db.pergerakanStok,
+                  ],
+                  addJoins:
+                      <
+                        T extends TableManagerState<
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic,
+                          dynamic
+                        >
+                      >(state) {
+                        if (kategoriId) {
+                          state =
+                              state.withJoin(
+                                    currentTable: table,
+                                    currentColumn: table.kategoriId,
+                                    referencedTable: $$ProdukTableReferences
+                                        ._kategoriIdTable(db),
+                                    referencedColumn: $$ProdukTableReferences
+                                        ._kategoriIdTable(db)
+                                        .id,
+                                  )
+                                  as T;
+                        }
+
+                        return state;
+                      },
+                  getPrefetchedDataCallback: (items) async {
+                    return [
+                      if (pergerakanStokRefs)
+                        await $_getPrefetchedData<
+                          ProdukData,
+                          $ProdukTable,
+                          PergerakanStokData
+                        >(
+                          currentTable: table,
+                          referencedTable: $$ProdukTableReferences
+                              ._pergerakanStokRefsTable(db),
+                          managerFromTypedResult: (p0) =>
+                              $$ProdukTableReferences(
+                                db,
+                                table,
+                                p0,
+                              ).pergerakanStokRefs,
+                          referencedItemsForCurrentItem:
+                              (item, referencedItems) => referencedItems.where(
+                                (e) => e.produkId == item.id,
+                              ),
+                          typedResults: items,
+                        ),
+                    ];
+                  },
+                );
+              },
+        ),
+      );
+}
+
+typedef $$ProdukTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $ProdukTable,
+      ProdukData,
+      $$ProdukTableFilterComposer,
+      $$ProdukTableOrderingComposer,
+      $$ProdukTableAnnotationComposer,
+      $$ProdukTableCreateCompanionBuilder,
+      $$ProdukTableUpdateCompanionBuilder,
+      (ProdukData, $$ProdukTableReferences),
+      ProdukData,
+      PrefetchHooks Function({bool kategoriId, bool pergerakanStokRefs})
+    >;
+typedef $$PergerakanStokTableCreateCompanionBuilder =
+    PergerakanStokCompanion Function({
+      Value<int> id,
+      required int produkId,
+      required JenisPergerakan jenis,
+      required int jumlahMili,
+      required DateTime waktu,
+    });
+typedef $$PergerakanStokTableUpdateCompanionBuilder =
+    PergerakanStokCompanion Function({
+      Value<int> id,
+      Value<int> produkId,
+      Value<JenisPergerakan> jenis,
+      Value<int> jumlahMili,
+      Value<DateTime> waktu,
+    });
+
+final class $$PergerakanStokTableReferences
+    extends
+        BaseReferences<
+          _$AppDatabase,
+          $PergerakanStokTable,
+          PergerakanStokData
+        > {
+  $$PergerakanStokTableReferences(
+    super.$_db,
+    super.$_table,
+    super.$_typedResult,
+  );
+
+  static $ProdukTable _produkIdTable(_$AppDatabase db) =>
+      db.produk.createAlias('pergerakan_stok__produk_id__produk__id');
+
+  $$ProdukTableProcessedTableManager get produkId {
+    final $_column = $_itemColumn<int>('produk_id')!;
+
+    final manager = $$ProdukTableTableManager(
+      $_db,
+      $_db.produk,
+    ).filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_produkIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+      manager.$state.copyWith(prefetchedData: [item]),
+    );
+  }
+}
+
+class $$PergerakanStokTableFilterComposer
+    extends Composer<_$AppDatabase, $PergerakanStokTable> {
+  $$PergerakanStokTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnWithTypeConverterFilters<JenisPergerakan, JenisPergerakan, String>
+  get jenis => $composableBuilder(
+    column: $table.jenis,
+    builder: (column) => ColumnWithTypeConverterFilters(column),
+  );
+
+  ColumnFilters<int> get jumlahMili => $composableBuilder(
+    column: $table.jumlahMili,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get waktu => $composableBuilder(
+    column: $table.waktu,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  $$ProdukTableFilterComposer get produkId {
+    final $$ProdukTableFilterComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.produkId,
+      referencedTable: $db.produk,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProdukTableFilterComposer(
+            $db: $db,
+            $table: $db.produk,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PergerakanStokTableOrderingComposer
+    extends Composer<_$AppDatabase, $PergerakanStokTable> {
+  $$PergerakanStokTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get jenis => $composableBuilder(
+    column: $table.jenis,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get jumlahMili => $composableBuilder(
+    column: $table.jumlahMili,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get waktu => $composableBuilder(
+    column: $table.waktu,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  $$ProdukTableOrderingComposer get produkId {
+    final $$ProdukTableOrderingComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.produkId,
+      referencedTable: $db.produk,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProdukTableOrderingComposer(
+            $db: $db,
+            $table: $db.produk,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PergerakanStokTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PergerakanStokTable> {
+  $$PergerakanStokTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumnWithTypeConverter<JenisPergerakan, String> get jenis =>
+      $composableBuilder(column: $table.jenis, builder: (column) => column);
+
+  GeneratedColumn<int> get jumlahMili => $composableBuilder(
+    column: $table.jumlahMili,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get waktu =>
+      $composableBuilder(column: $table.waktu, builder: (column) => column);
+
+  $$ProdukTableAnnotationComposer get produkId {
+    final $$ProdukTableAnnotationComposer composer = $composerBuilder(
+      composer: this,
+      getCurrentColumn: (t) => t.produkId,
+      referencedTable: $db.produk,
+      getReferencedColumn: (t) => t.id,
+      builder:
+          (
+            joinBuilder, {
+            $addJoinBuilderToRootComposer,
+            $removeJoinBuilderFromRootComposer,
+          }) => $$ProdukTableAnnotationComposer(
+            $db: $db,
+            $table: $db.produk,
+            $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+            joinBuilder: joinBuilder,
+            $removeJoinBuilderFromRootComposer:
+                $removeJoinBuilderFromRootComposer,
+          ),
+    );
+    return composer;
+  }
+}
+
+class $$PergerakanStokTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PergerakanStokTable,
+          PergerakanStokData,
+          $$PergerakanStokTableFilterComposer,
+          $$PergerakanStokTableOrderingComposer,
+          $$PergerakanStokTableAnnotationComposer,
+          $$PergerakanStokTableCreateCompanionBuilder,
+          $$PergerakanStokTableUpdateCompanionBuilder,
+          (PergerakanStokData, $$PergerakanStokTableReferences),
+          PergerakanStokData,
+          PrefetchHooks Function({bool produkId})
+        > {
+  $$PergerakanStokTableTableManager(
+    _$AppDatabase db,
+    $PergerakanStokTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PergerakanStokTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PergerakanStokTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PergerakanStokTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                Value<int> produkId = const Value.absent(),
+                Value<JenisPergerakan> jenis = const Value.absent(),
+                Value<int> jumlahMili = const Value.absent(),
+                Value<DateTime> waktu = const Value.absent(),
+              }) => PergerakanStokCompanion(
+                id: id,
+                produkId: produkId,
+                jenis: jenis,
+                jumlahMili: jumlahMili,
+                waktu: waktu,
+              ),
+          createCompanionCallback:
+              ({
+                Value<int> id = const Value.absent(),
+                required int produkId,
+                required JenisPergerakan jenis,
+                required int jumlahMili,
+                required DateTime waktu,
+              }) => PergerakanStokCompanion.insert(
+                id: id,
+                produkId: produkId,
+                jenis: jenis,
+                jumlahMili: jumlahMili,
+                waktu: waktu,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map(
+                (e) => (
+                  e.readTable(table),
+                  $$PergerakanStokTableReferences(db, table, e),
+                ),
+              )
+              .toList(),
+          prefetchHooksCallback: ({produkId = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [],
@@ -1558,16 +2341,17 @@ class $$ProdukTableTableManager
                       dynamic
                     >
                   >(state) {
-                    if (kategoriId) {
+                    if (produkId) {
                       state =
                           state.withJoin(
                                 currentTable: table,
-                                currentColumn: table.kategoriId,
-                                referencedTable: $$ProdukTableReferences
-                                    ._kategoriIdTable(db),
-                                referencedColumn: $$ProdukTableReferences
-                                    ._kategoriIdTable(db)
-                                    .id,
+                                currentColumn: table.produkId,
+                                referencedTable: $$PergerakanStokTableReferences
+                                    ._produkIdTable(db),
+                                referencedColumn:
+                                    $$PergerakanStokTableReferences
+                                        ._produkIdTable(db)
+                                        .id,
                               )
                               as T;
                     }
@@ -1583,19 +2367,19 @@ class $$ProdukTableTableManager
       );
 }
 
-typedef $$ProdukTableProcessedTableManager =
+typedef $$PergerakanStokTableProcessedTableManager =
     ProcessedTableManager<
       _$AppDatabase,
-      $ProdukTable,
-      ProdukData,
-      $$ProdukTableFilterComposer,
-      $$ProdukTableOrderingComposer,
-      $$ProdukTableAnnotationComposer,
-      $$ProdukTableCreateCompanionBuilder,
-      $$ProdukTableUpdateCompanionBuilder,
-      (ProdukData, $$ProdukTableReferences),
-      ProdukData,
-      PrefetchHooks Function({bool kategoriId})
+      $PergerakanStokTable,
+      PergerakanStokData,
+      $$PergerakanStokTableFilterComposer,
+      $$PergerakanStokTableOrderingComposer,
+      $$PergerakanStokTableAnnotationComposer,
+      $$PergerakanStokTableCreateCompanionBuilder,
+      $$PergerakanStokTableUpdateCompanionBuilder,
+      (PergerakanStokData, $$PergerakanStokTableReferences),
+      PergerakanStokData,
+      PrefetchHooks Function({bool produkId})
     >;
 
 class $AppDatabaseManager {
@@ -1607,4 +2391,6 @@ class $AppDatabaseManager {
       $$KategoriTableTableManager(_db, _db.kategori);
   $$ProdukTableTableManager get produk =>
       $$ProdukTableTableManager(_db, _db.produk);
+  $$PergerakanStokTableTableManager get pergerakanStok =>
+      $$PergerakanStokTableTableManager(_db, _db.pergerakanStok);
 }
