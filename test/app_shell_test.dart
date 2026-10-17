@@ -47,7 +47,7 @@ void main() {
 
     await tester.tap(find.text('Laporan').last);
     await tester.pumpAndSettle();
-    expect(find.text('Belum ada transaksi'), findsOneWidget);
+    expect(find.byKey(const Key('laporan-kosong')), findsOneWidget);
 
     await tester.tap(find.text('Pengaturan').last);
     await tester.pumpAndSettle();

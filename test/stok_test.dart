@@ -233,7 +233,9 @@ void main() {
     await bukaProduk(tester);
     await bukaProdukBernama(tester, 'Kopi Bubuk');
     await tambahStok(tester, '10');
-    await tester.pageBack();
+    // pageBack() mencari tooltip "Back" bawaan Flutter; aplikasi ini berbahasa
+    // Indonesia, jadi tombolnya dicari lewat jenisnya.
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
 
     expect(find.textContaining('stok 10'), findsOneWidget);

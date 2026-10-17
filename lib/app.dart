@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/clock.dart';
 import 'package:kasir/core/providers.dart';
@@ -37,6 +38,15 @@ class KasirApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Kasir',
         debugShowCheckedModeBanner: false,
+        // Seluruh antarmuka berbahasa Indonesia, termasuk teks bawaan Flutter
+        // seperti nama bulan di pemilih tanggal (user story 83).
+        locale: const Locale('id'),
+        supportedLocales: const [Locale('id')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
         themeMode: ThemeMode.system,
         theme: ThemeData(colorSchemeSeed: _seedColor, brightness: Brightness.light),
         darkTheme: ThemeData(colorSchemeSeed: _seedColor, brightness: Brightness.dark),
