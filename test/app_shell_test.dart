@@ -33,6 +33,8 @@ void main() {
       expect(find.text(label), findsWidgets, reason: 'tab $label harus ada');
     }
     expect(find.text('Keranjang masih kosong'), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('berpindah tab menampilkan bagian yang dipilih', (tester) async {

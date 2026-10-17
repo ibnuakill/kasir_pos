@@ -5,6 +5,8 @@ import 'package:kasir/core/clock.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/data/setting_keys.dart';
 
+import 'bantuan.dart';
+
 void main() {
   late AppDatabase database;
 
@@ -48,6 +50,8 @@ void main() {
     expect(find.byKey(const Key('wizard-nama')), findsOneWidget);
     expect(find.byKey(const Key('wizard-pin')), findsOneWidget);
     expect(find.text('Keranjang masih kosong'), findsNothing);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('wizard menolak diselesaikan bila nama toko kosong', (
@@ -59,6 +63,8 @@ void main() {
 
     expect(find.text('Nama toko wajib diisi'), findsOneWidget);
     expect(find.byKey(const Key('wizard-nama')), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('wizard menolak diselesaikan bila PIN kosong', (tester) async {
@@ -68,6 +74,8 @@ void main() {
 
     expect(find.text('PIN wajib diisi'), findsOneWidget);
     expect(find.byKey(const Key('wizard-pin')), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('wizard menolak PIN yang bukan 4 sampai 6 angka', (tester) async {
@@ -77,6 +85,8 @@ void main() {
 
     expect(find.text('PIN harus 4–6 angka'), findsOneWidget);
     expect(find.byKey(const Key('wizard-pin')), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('wizard menolak bila ulangan PIN tidak sama', (tester) async {
@@ -86,6 +96,8 @@ void main() {
 
     expect(find.text('PIN tidak sama'), findsOneWidget);
     expect(find.byKey(const Key('wizard-pin')), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('setelah wizard selesai aplikasi masuk ke layar kasir', (
@@ -97,6 +109,8 @@ void main() {
 
     expect(find.text('Keranjang masih kosong'), findsOneWidget);
     expect(find.byKey(const Key('wizard-nama')), findsNothing);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('membuka ulang aplikasi langsung ke layar kasir', (tester) async {
@@ -108,6 +122,8 @@ void main() {
 
     expect(find.text('Keranjang masih kosong'), findsOneWidget);
     expect(find.byKey(const Key('wizard-nama')), findsNothing);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('Pengaturan menampilkan nama dan alamat toko', (tester) async {
@@ -123,6 +139,8 @@ void main() {
 
     expect(find.text('Warung Bu Sri'), findsOneWidget);
     expect(find.text('Jl. Melati 12'), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 
   // PIN tidak pernah terlihat di layar, jadi satu-satunya cara memeriksa
@@ -137,5 +155,7 @@ void main() {
     expect(tersimpan, isNotNull);
     expect(tersimpan, isNot(contains('1234')));
     expect(tersimpan!.length, greaterThan(20));
+
+    await tutupAplikasi(tester);
   });
 }

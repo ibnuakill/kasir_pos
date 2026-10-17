@@ -6,6 +6,8 @@ import 'package:kasir/data/database.dart';
 import 'package:kasir/data/pin_store.dart';
 import 'package:kasir/data/toko_store.dart';
 
+import 'bantuan.dart';
+
 void main() {
   late AppDatabase database;
 
@@ -50,6 +52,8 @@ void main() {
 
     expect(find.byKey(const Key('pin-input')), findsOneWidget);
     expect(find.byKey(const Key('data-toko-nama')), findsNothing);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('PIN salah ditolak dengan pesan yang terbaca', (tester) async {
@@ -59,6 +63,8 @@ void main() {
 
     expect(find.text('PIN salah'), findsOneWidget);
     expect(find.byKey(const Key('data-toko-nama')), findsNothing);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('PIN benar membuka Pengaturan', (tester) async {
@@ -68,6 +74,8 @@ void main() {
     expect(find.byKey(const Key('data-toko-nama')), findsOneWidget);
     expect(find.text('Warung Bu Sri'), findsOneWidget);
     expect(find.text('Jl. Melati 12'), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('nama dan alamat toko bisa diubah dan tersimpan', (tester) async {
@@ -96,6 +104,8 @@ void main() {
 
     expect(find.text('Warung Bu Sri Baru'), findsOneWidget);
     expect(find.text('Jl. Baru 9'), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 
   testWidgets('PIN bisa diganti dan PIN lama tidak berlaku lagi', (tester) async {
@@ -119,5 +129,7 @@ void main() {
 
     await masukkanPin(tester, '5678');
     expect(find.byKey(const Key('data-toko-nama')), findsOneWidget);
+
+    await tutupAplikasi(tester);
   });
 }
