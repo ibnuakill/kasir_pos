@@ -322,7 +322,14 @@ void main() {
       await tester.tap(find.byKey(const Key('bayar-simpan')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Transaksi TRX-20261017-001 tersimpan'), findsOneWidget);
+      // Struk terbuka sendiri sebagai tanda Transaksi tersimpan.
+      expect(
+        tester.widget<Text>(find.byKey(const Key('struk-nomor'))).data,
+        'TRX-20261017-001',
+      );
+
+      await tester.tap(find.byKey(const Key('struk-selesai')));
+      await tester.pumpAndSettle();
       expect(find.text('Keranjang masih kosong'), findsOneWidget);
 
       await tutupAplikasi(tester);

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/clock.dart';
 import 'package:kasir/core/pemilih_gambar.dart';
+import 'package:kasir/core/pembagi.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/data/gambar_store.dart';
 import 'package:kasir/data/qris_store.dart';
@@ -31,6 +32,10 @@ final gambarStoreProvider = Provider<GambarStore>(
 final pemilihGambarProvider = Provider<PemilihGambar>(
   (ref) => const PemilihGambarPerangkat(),
 );
+
+/// Lembar berbagi sistem. Di test diganti pembagi palsu supaya tidak ada
+/// lembar berbagi yang benar-benar terbuka.
+final pembagiProvider = Provider<Pembagi>((ref) => const PembagiSistem());
 
 /// Path gambar QRIS toko, atau null bila belum diatur.
 final gambarQrisProvider = FutureProvider<String?>(

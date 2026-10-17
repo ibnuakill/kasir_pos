@@ -8,6 +8,7 @@ import 'package:kasir/core/rupiah.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/data/transaksi_store.dart';
 import 'package:kasir/features/kasir/keranjang.dart';
+import 'package:kasir/features/struk/struk_screen.dart';
 
 /// Lembar pembayaran Tunai: kasir memasukkan uang yang diterima, Kembalian
 /// dihitung sambil mengetik, dan satu tombol menyimpan Transaksi
@@ -50,7 +51,6 @@ class _PembayaranSheetState extends ConsumerState<PembayaranSheet> {
   Future<void> _simpan() async {
     final isi = ref.read(keranjangProvider);
     final metode = _metode;
-    final messenger = ScaffoldMessenger.of(context);
     final navigator = Navigator.of(context);
 
     setState(() {
@@ -77,9 +77,10 @@ class _PembayaranSheetState extends ConsumerState<PembayaranSheet> {
       if (!mounted) return;
       ref.read(keranjangProvider.notifier).kosongkan();
       navigator.pop();
-      messenger.showSnackBar(
-        SnackBar(content: Text('Transaksi ${hasil.nomor} tersimpan')),
-      );
+
+      // Struk langsung tampil begitu Transaksi tersimpan (user story 51) —
+      // itulah bukti Transaksi berhasil, bukan sekadar pesan singkat.
+      await StrukScreen.buka(navigator.context, hasil.id);
     } on UangKurangException {
       setState(() {
         _menyimpan = false;

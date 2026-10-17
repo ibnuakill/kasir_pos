@@ -339,6 +339,13 @@ void main() {
     await tester.pumpAndSettle();
   }
 
+  /// Struk terbuka sendiri setelah Transaksi tersimpan; ditutup dulu sebelum
+  /// memeriksa layar kasir di belakangnya.
+  Future<void> tutupStruk(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('struk-selesai')));
+    await tester.pumpAndSettle();
+  }
+
   testWidgets('Kembalian dihitung otomatis dari uang diterima', (tester) async {
     await bukaKasir(tester);
     await tekanProduk(tester, kopiId);
@@ -387,7 +394,10 @@ void main() {
     await tester.tap(find.byKey(const Key('bayar-simpan')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Transaksi TRX-20261017-001 tersimpan'), findsOneWidget);
+    // Tanda Transaksi tersimpan adalah Struk yang langsung terbuka.
+    expect(teksKunci(tester, 'struk-nomor'), 'TRX-20261017-001');
+
+    await tutupStruk(tester);
     expect(find.text('Keranjang masih kosong'), findsOneWidget);
     expect(teksKunci(tester, 'keranjang-total'), 'Rp0');
 
@@ -404,9 +414,7 @@ void main() {
     await tester.tap(find.byKey(const Key('bayar-simpan')));
     await tester.pumpAndSettle();
 
-    // SnackBar Transaksi pertama menutupi tombol Bayar; tunggu sampai hilang.
-    await tester.pump(const Duration(seconds: 4));
-    await tester.pumpAndSettle();
+    await tutupStruk(tester);
 
     await tekanProduk(tester, kopiId);
     await bukaPembayaran(tester);
@@ -414,7 +422,7 @@ void main() {
     await tester.tap(find.byKey(const Key('bayar-simpan')));
     await tester.pumpAndSettle();
 
-    expect(find.text('Transaksi TRX-20261017-002 tersimpan'), findsOneWidget);
+    expect(teksKunci(tester, 'struk-nomor'), 'TRX-20261017-002');
 
     await tutupAplikasi(tester);
   });
@@ -428,6 +436,7 @@ void main() {
     await isiUang(tester, '15000');
     await tester.tap(find.byKey(const Key('bayar-simpan')));
     await tester.pumpAndSettle();
+    await tutupStruk(tester);
 
     expect(find.text('stok 9'), findsOneWidget);
 
