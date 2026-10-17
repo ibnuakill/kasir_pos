@@ -4,6 +4,7 @@ import 'package:kasir/core/pemilih_gambar.dart';
 import 'package:kasir/core/pembagi.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/data/gambar_store.dart';
+import 'package:kasir/data/keranjang_store.dart';
 import 'package:kasir/data/qris_store.dart';
 import 'package:kasir/data/toko_store.dart';
 
@@ -36,6 +37,12 @@ final pemilihGambarProvider = Provider<PemilihGambar>(
 /// Lembar berbagi sistem. Di test diganti pembagi palsu supaya tidak ada
 /// lembar berbagi yang benar-benar terbuka.
 final pembagiProvider = Provider<Pembagi>((ref) => const PembagiSistem());
+
+/// Penyimpanan Keranjang yang sedang disusun, supaya bertahan saat aplikasi
+/// ditutup (user story 40, 41).
+final keranjangStoreProvider = Provider<KeranjangStore>(
+  (ref) => KeranjangStore(ref.watch(databaseProvider)),
+);
 
 /// Path gambar QRIS toko, atau null bila belum diatur.
 final gambarQrisProvider = FutureProvider<String?>(

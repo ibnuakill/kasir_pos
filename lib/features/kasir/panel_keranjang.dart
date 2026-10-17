@@ -9,6 +9,32 @@ import 'package:kasir/features/kasir/keranjang.dart';
 import 'package:kasir/features/kasir/pembayaran_sheet.dart';
 import 'package:kasir/features/stok/stok_rules.dart';
 
+/// Mengosongkan Keranjang dengan satu aksi (user story 42). Tetap lewat satu
+/// konfirmasi karena seluruh pesanan yang sudah disusun hilang sekaligus.
+Future<void> _kosongkan(BuildContext context, WidgetRef ref) async {
+  final yakin = await showDialog<bool>(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Kosongkan Keranjang?'),
+      content: const Text('Semua baris dan Diskon akan dihapus.'),
+      actions: [
+        TextButton(
+          key: const Key('keranjang-kosongkan-batal'),
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Batal'),
+        ),
+        FilledButton(
+          key: const Key('keranjang-kosongkan-konfirmasi'),
+          onPressed: () => Navigator.of(context).pop(true),
+          child: const Text('Kosongkan'),
+        ),
+      ],
+    ),
+  );
+
+  if (yakin ?? false) ref.read(keranjangProvider.notifier).kosongkan();
+}
+
 /// Isi Keranjang: baris yang bisa diubah Kuantitas-nya, bisa dihapus, dan
 /// Subtotal yang mengikuti tanpa tombol hitung.
 class PanelKeranjang extends ConsumerWidget {
@@ -28,6 +54,16 @@ class PanelKeranjang extends ConsumerWidget {
               Text('Keranjang', style: teks.titleMedium),
               const Spacer(),
               Text('${isi.jumlahBaris} item'),
+              if (!isi.kosong) ...[
+                const SizedBox(width: 4),
+                IconButton(
+                  key: const Key('keranjang-kosongkan'),
+                  tooltip: 'Kosongkan Keranjang',
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.delete_sweep_outlined, size: 20),
+                  onPressed: () => _kosongkan(context, ref),
+                ),
+              ],
             ],
           ),
         ),

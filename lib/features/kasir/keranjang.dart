@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/diskon.dart';
 import 'package:kasir/core/kuantitas.dart';
+import 'package:kasir/core/providers.dart';
 import 'package:kasir/core/rupiah.dart';
 import 'package:kasir/data/database.dart';
+import 'package:kasir/data/keranjang_store.dart';
 
 /// Satu baris Keranjang. Harga diambil dari Harga Katalog saat Produk
 /// dimasukkan dan tidak bisa diubah dari layar kasir (user story 36).
@@ -35,11 +37,86 @@ class IsiKeranjang {
   bool get kosong => baris.isEmpty;
 }
 
-/// Keranjang yang sedang disusun. Masih di memori pada tiket ini; tiket 14
-/// yang memindahkannya ke database supaya bertahan saat aplikasi ditutup.
+/// Keranjang yang sedang disusun.
+///
+/// Setiap perubahan langsung disimpan (user story 40) dan dipulihkan saat
+/// aplikasi dibuka lagi (user story 41). Penyimpanannya lewat satu antrean
+/// berurutan supaya ketukan cepat berturut-turut tidak saling mendahului dan
+/// meninggalkan isi Keranjang yang bukan yang terakhir terlihat di layar.
 class Keranjang extends Notifier<IsiKeranjang> {
+  Future<void> _antrian = Future.value();
+  bool _hidup = true;
+  bool _dipulihkan = false;
+
   @override
-  IsiKeranjang build() => const IsiKeranjang();
+  IsiKeranjang build() {
+    _hidup = true;
+    ref.onDispose(() => _hidup = false);
+    _pulihkan();
+    return const IsiKeranjang();
+  }
+
+  /// Memulihkan Keranjang yang tersimpan. Baris yang Produknya sudah tidak ada
+  /// dilewati, dan Diskon yang menempel dibuang bila tidak ada baris tersisa.
+  Future<void> _pulihkan() async {
+    if (_dipulihkan) return;
+    _dipulihkan = true;
+
+    final store = ref.read(keranjangStoreProvider);
+    final tersimpan = await store.baca();
+    if (!_hidup || tersimpan == null) return;
+    // Kasir sudah mengetuk sesuatu selagi pemulihan berjalan: isi di layar
+    // lebih baru daripada yang tersimpan.
+    if (!state.kosong) return;
+
+    final db = ref.read(databaseProvider);
+    final id = [for (final satu in tersimpan.baris) satu.produkId];
+    final produk = await (db.select(
+      db.produk,
+    )..where((t) => t.id.isIn(id))).get();
+    if (!_hidup) return;
+
+    final perId = {for (final satu in produk) satu.id: satu};
+    final baris = [
+      for (final satu in tersimpan.baris)
+        if (perId[satu.produkId] case final produk?)
+          BarisKeranjang(produk: produk, kuantitasMili: satu.kuantitasMili),
+    ];
+
+    if (baris.isEmpty) {
+      await store.hapus();
+      return;
+    }
+
+    state = IsiKeranjang(baris: baris, diskon: tersimpan.diskon);
+  }
+
+  /// Menyimpan isi Keranjang sekarang. Keranjang kosong berarti tidak ada yang
+  /// perlu dipulihkan, jadi barisnya dihapus (user story 42, 50).
+  void _simpan() {
+    final isi = state;
+    final potret = isi.kosong
+        ? null
+        : IsiKeranjangTersimpan(
+            baris: [
+              for (final baris in isi.baris)
+                BarisKeranjangTersimpan(
+                  produkId: baris.produk.id,
+                  kuantitasMili: baris.kuantitasMili,
+                ),
+            ],
+            diskon: isi.diskon,
+          );
+
+    final store = ref.read(keranjangStoreProvider);
+    _antrian = _antrian.then((_) async {
+      if (potret == null) {
+        await store.hapus();
+      } else {
+        await store.simpan(potret);
+      }
+    });
+  }
 
   void tambah(ProdukData produk) {
     final posisi = state.baris.indexWhere(
@@ -53,6 +130,7 @@ class Keranjang extends Notifier<IsiKeranjang> {
         ],
         diskon: state.diskon,
       );
+      _simpan();
       return;
     }
 
@@ -64,6 +142,7 @@ class Keranjang extends Notifier<IsiKeranjang> {
         ),
       diskon: state.diskon,
     );
+    _simpan();
   }
 
   void ubahKuantitas(int produkId, int kuantitasMili) {
@@ -77,6 +156,7 @@ class Keranjang extends Notifier<IsiKeranjang> {
       ],
       diskon: state.diskon,
     );
+    _simpan();
   }
 
   void hapus(int produkId) {
@@ -87,18 +167,25 @@ class Keranjang extends Notifier<IsiKeranjang> {
     // Keranjang kosong berarti transaksi baru: Diskon lama tidak boleh
     // menempel diam-diam pada belanja berikutnya.
     state = IsiKeranjang(baris: sisa, diskon: sisa.isEmpty ? null : state.diskon);
+    _simpan();
   }
 
   /// `null` berarti Diskon dihapus dan Total kembali sama dengan Subtotal.
   void pasangDiskon(Diskon? diskon) {
     state = IsiKeranjang(baris: state.baris, diskon: diskon);
+    _simpan();
   }
 
-  /// Dipanggil setelah Transaksi tersimpan: pembeli berikutnya mulai dari nol
-  /// (user story 50).
+  /// Dipanggil setelah Transaksi tersimpan (user story 50) atau saat kasir
+  /// sengaja mengosongkan Keranjang (user story 42).
   void kosongkan() {
     state = const IsiKeranjang();
+    _simpan();
   }
+
+  /// Menunggu semua penyimpanan yang masih mengantre selesai. Dipakai test
+  /// supaya tidak perlu menebak kapan penulisan terakhir mendarat.
+  Future<void> tungguTersimpan() => _antrian;
 }
 
 final keranjangProvider = NotifierProvider<Keranjang, IsiKeranjang>(
