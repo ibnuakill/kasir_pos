@@ -117,6 +117,9 @@ void main() {
 
     await tester.tap(find.text('Pengaturan').last);
     await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('pin-input')), '1234');
+    await tester.tap(find.byKey(const Key('pin-buka')));
+    await tester.pumpAndSettle();
 
     expect(find.text('Warung Bu Sri'), findsOneWidget);
     expect(find.text('Jl. Melati 12'), findsOneWidget);

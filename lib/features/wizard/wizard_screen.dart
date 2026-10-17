@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kasir/core/pin.dart';
 import 'package:kasir/core/providers.dart';
-import 'package:kasir/data/setting_keys.dart';
+import 'package:kasir/data/pin_store.dart';
 import 'package:kasir/data/toko_store.dart';
+import 'package:kasir/features/pin/pin_rules.dart';
 
 /// Wizard yang muncul sekali di awal: mengisi Data Toko dan PIN.
 class WizardScreen extends ConsumerStatefulWidget {
@@ -40,7 +40,7 @@ class _WizardScreenState extends ConsumerState<WizardScreen> {
     await TokoStore(database).simpan(
       Toko(nama: _nama.text.trim(), alamat: _alamat.text.trim()),
     );
-    await database.setSetting(SettingKeys.pinHash, PinHash.buat(_pin.text));
+    await PinStore(database).simpan(_pin.text);
 
     if (!mounted) return;
     // Layar pembuka membaca Data Toko lewat tokoProvider; membatalkan cache-nya
@@ -51,19 +51,8 @@ class _WizardScreenState extends ConsumerState<WizardScreen> {
   String? _wajibDiisi(String? value, String pesan) =>
       (value == null || value.trim().isEmpty) ? pesan : null;
 
-  String? _validasiPin(String? value) {
-    final pin = value?.trim() ?? '';
-    if (pin.isEmpty) return 'PIN wajib diisi';
-    if (!RegExp(r'^\d{4,6}$').hasMatch(pin)) return 'PIN harus 4–6 angka';
-    return null;
-  }
-
-  String? _validasiPinUlang(String? value) {
-    final ulang = value?.trim() ?? '';
-    if (ulang.isEmpty) return 'Ulangi PIN wajib diisi';
-    if (ulang != _pin.text.trim()) return 'PIN tidak sama';
-    return null;
-  }
+  String? _validasiPinUlang(String? value) =>
+      validasiUlangPin(value, _pin.text);
 
   @override
   Widget build(BuildContext context) {
@@ -126,7 +115,7 @@ class _WizardScreenState extends ConsumerState<WizardScreen> {
                         helperText: '4–6 angka',
                         border: OutlineInputBorder(),
                       ),
-                      validator: _validasiPin,
+                      validator: validasiPinBaru,
                     ),
                     const SizedBox(height: 16),
                     TextFormField(

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kasir/app.dart';
 import 'package:kasir/core/clock.dart';
 import 'package:kasir/data/database.dart';
+import 'package:kasir/data/pin_store.dart';
 import 'package:kasir/data/toko_store.dart';
 
 void main() {
@@ -13,6 +14,7 @@ void main() {
     await TokoStore(
       database,
     ).simpan(const Toko(nama: 'Toko Uji', alamat: 'Jl. Uji No. 1'));
+    await PinStore(database).simpan('1234');
   });
   tearDown(() => database.close());
 
@@ -44,6 +46,9 @@ void main() {
     expect(find.text('Belum ada transaksi'), findsOneWidget);
 
     await tester.tap(find.text('Pengaturan').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('pin-input')), '1234');
+    await tester.tap(find.byKey(const Key('pin-buka')));
     await tester.pumpAndSettle();
     expect(find.text('Toko Uji'), findsOneWidget);
 
