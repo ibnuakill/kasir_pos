@@ -6,7 +6,7 @@ import 'package:kasir/core/waktu.dart';
 import 'package:kasir/data/database.dart';
 import 'package:kasir/data/laporan_store.dart';
 import 'package:kasir/features/laporan/laporan_providers.dart';
-import 'package:kasir/features/struk/struk_screen.dart';
+import 'package:kasir/features/transaksi/detail_transaksi_screen.dart';
 
 /// Tab Laporan: hasil satu hari, dengan tanggal yang bisa digeser.
 ///
@@ -211,21 +211,41 @@ class _BarisTransaksi extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tunai = transaksi.metodeBayar == MetodeBayar.tunai;
+    final batal = transaksi.batal;
+    final warna = Theme.of(context).colorScheme;
+
+    // Transaksi Batal tetap ada di daftar, tapi dicoret dan diberi alasannya
+    // supaya tidak terbaca sebagai penjualan yang sah (user story 65).
+    final coret = batal ? TextDecoration.lineThrough : null;
 
     return ListTile(
       key: Key('laporan-transaksi-${transaksi.id}'),
-      title: Text(transaksi.nomor),
-      subtitle: Text(
-        '${formatJam(transaksi.waktu)} · ${tunai ? 'Tunai' : 'QRIS'}',
+      title: Text(
+        transaksi.nomor,
+        style: TextStyle(decoration: coret),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('${formatJam(transaksi.waktu)} · ${tunai ? 'Tunai' : 'QRIS'}'),
+          if (batal)
+            Text(
+              'Batal · ${transaksi.alasanBatal ?? '-'}',
+              key: Key('laporan-batal-${transaksi.id}'),
+              style: TextStyle(color: warna.error),
+            ),
+        ],
       ),
       trailing: Text(
         formatRupiah(transaksi.total),
         key: Key('laporan-total-${transaksi.id}'),
-        style: Theme.of(context).textTheme.titleSmall,
+        style: Theme.of(
+          context,
+        ).textTheme.titleSmall?.copyWith(decoration: coret),
       ),
-      // Membuka Transaksi dari daftar menampilkan Struk-nya: di situ sudah
-      // tertulis apa saja yang terjual (user story 62).
-      onTap: () => StrukScreen.buka(context, transaksi.id),
+      // Membuka Transaksi dari daftar menampilkan detailnya, tempat Struk bisa
+      // dibagikan ulang atau Transaksi dibatalkan (user story 62, 63).
+      onTap: () => DetailTransaksiScreen.buka(context, transaksi.id),
     );
   }
 }

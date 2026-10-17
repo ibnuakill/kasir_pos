@@ -1401,6 +1401,41 @@ class $TransaksiTable extends Transaksi
     type: DriftSqlType.int,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _batalMeta = const VerificationMeta('batal');
+  @override
+  late final GeneratedColumn<bool> batal = GeneratedColumn<bool>(
+    'batal',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("batal" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _alasanBatalMeta = const VerificationMeta(
+    'alasanBatal',
+  );
+  @override
+  late final GeneratedColumn<String> alasanBatal = GeneratedColumn<String>(
+    'alasan_batal',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _waktuBatalMeta = const VerificationMeta(
+    'waktuBatal',
+  );
+  @override
+  late final GeneratedColumn<DateTime> waktuBatal = GeneratedColumn<DateTime>(
+    'waktu_batal',
+    aliasedName,
+    true,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: false,
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1414,6 +1449,9 @@ class $TransaksiTable extends Transaksi
     total,
     uangDiterima,
     kembalian,
+    batal,
+    alasanBatal,
+    waktuBatal,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1494,6 +1532,27 @@ class $TransaksiTable extends Transaksi
         kembalian.isAcceptableOrUnknown(data['kembalian']!, _kembalianMeta),
       );
     }
+    if (data.containsKey('batal')) {
+      context.handle(
+        _batalMeta,
+        batal.isAcceptableOrUnknown(data['batal']!, _batalMeta),
+      );
+    }
+    if (data.containsKey('alasan_batal')) {
+      context.handle(
+        _alasanBatalMeta,
+        alasanBatal.isAcceptableOrUnknown(
+          data['alasan_batal']!,
+          _alasanBatalMeta,
+        ),
+      );
+    }
+    if (data.containsKey('waktu_batal')) {
+      context.handle(
+        _waktuBatalMeta,
+        waktuBatal.isAcceptableOrUnknown(data['waktu_batal']!, _waktuBatalMeta),
+      );
+    }
     return context;
   }
 
@@ -1551,6 +1610,18 @@ class $TransaksiTable extends Transaksi
         DriftSqlType.int,
         data['${effectivePrefix}kembalian'],
       ),
+      batal: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}batal'],
+      )!,
+      alasanBatal: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}alasan_batal'],
+      ),
+      waktuBatal: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}waktu_batal'],
+      ),
     );
   }
 
@@ -1587,6 +1658,12 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
   /// Hanya terisi untuk pembayaran Tunai; QRIS tidak punya Kembalian.
   final int? uangDiterima;
   final int? kembalian;
+
+  /// Transaksi Batal tidak dihapus: jejak kesalahannya harus tetap ada, dan
+  /// Omzet tidak menghitungnya (user story 65, 66).
+  final bool batal;
+  final String? alasanBatal;
+  final DateTime? waktuBatal;
   const TransaksiData({
     required this.id,
     required this.nomor,
@@ -1599,6 +1676,9 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
     required this.total,
     this.uangDiterima,
     this.kembalian,
+    required this.batal,
+    this.alasanBatal,
+    this.waktuBatal,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1628,6 +1708,13 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
     if (!nullToAbsent || kembalian != null) {
       map['kembalian'] = Variable<int>(kembalian);
     }
+    map['batal'] = Variable<bool>(batal);
+    if (!nullToAbsent || alasanBatal != null) {
+      map['alasan_batal'] = Variable<String>(alasanBatal);
+    }
+    if (!nullToAbsent || waktuBatal != null) {
+      map['waktu_batal'] = Variable<DateTime>(waktuBatal);
+    }
     return map;
   }
 
@@ -1652,6 +1739,13 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
       kembalian: kembalian == null && nullToAbsent
           ? const Value.absent()
           : Value(kembalian),
+      batal: Value(batal),
+      alasanBatal: alasanBatal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(alasanBatal),
+      waktuBatal: waktuBatal == null && nullToAbsent
+          ? const Value.absent()
+          : Value(waktuBatal),
     );
   }
 
@@ -1676,6 +1770,9 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
       total: serializer.fromJson<int>(json['total']),
       uangDiterima: serializer.fromJson<int?>(json['uangDiterima']),
       kembalian: serializer.fromJson<int?>(json['kembalian']),
+      batal: serializer.fromJson<bool>(json['batal']),
+      alasanBatal: serializer.fromJson<String?>(json['alasanBatal']),
+      waktuBatal: serializer.fromJson<DateTime?>(json['waktuBatal']),
     );
   }
   @override
@@ -1697,6 +1794,9 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
       'total': serializer.toJson<int>(total),
       'uangDiterima': serializer.toJson<int?>(uangDiterima),
       'kembalian': serializer.toJson<int?>(kembalian),
+      'batal': serializer.toJson<bool>(batal),
+      'alasanBatal': serializer.toJson<String?>(alasanBatal),
+      'waktuBatal': serializer.toJson<DateTime?>(waktuBatal),
     };
   }
 
@@ -1712,6 +1812,9 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
     int? total,
     Value<int?> uangDiterima = const Value.absent(),
     Value<int?> kembalian = const Value.absent(),
+    bool? batal,
+    Value<String?> alasanBatal = const Value.absent(),
+    Value<DateTime?> waktuBatal = const Value.absent(),
   }) => TransaksiData(
     id: id ?? this.id,
     nomor: nomor ?? this.nomor,
@@ -1724,6 +1827,9 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
     total: total ?? this.total,
     uangDiterima: uangDiterima.present ? uangDiterima.value : this.uangDiterima,
     kembalian: kembalian.present ? kembalian.value : this.kembalian,
+    batal: batal ?? this.batal,
+    alasanBatal: alasanBatal.present ? alasanBatal.value : this.alasanBatal,
+    waktuBatal: waktuBatal.present ? waktuBatal.value : this.waktuBatal,
   );
   TransaksiData copyWithCompanion(TransaksiCompanion data) {
     return TransaksiData(
@@ -1746,6 +1852,13 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
           ? data.uangDiterima.value
           : this.uangDiterima,
       kembalian: data.kembalian.present ? data.kembalian.value : this.kembalian,
+      batal: data.batal.present ? data.batal.value : this.batal,
+      alasanBatal: data.alasanBatal.present
+          ? data.alasanBatal.value
+          : this.alasanBatal,
+      waktuBatal: data.waktuBatal.present
+          ? data.waktuBatal.value
+          : this.waktuBatal,
     );
   }
 
@@ -1762,7 +1875,10 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
           ..write('potongan: $potongan, ')
           ..write('total: $total, ')
           ..write('uangDiterima: $uangDiterima, ')
-          ..write('kembalian: $kembalian')
+          ..write('kembalian: $kembalian, ')
+          ..write('batal: $batal, ')
+          ..write('alasanBatal: $alasanBatal, ')
+          ..write('waktuBatal: $waktuBatal')
           ..write(')'))
         .toString();
   }
@@ -1780,6 +1896,9 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
     total,
     uangDiterima,
     kembalian,
+    batal,
+    alasanBatal,
+    waktuBatal,
   );
   @override
   bool operator ==(Object other) =>
@@ -1795,7 +1914,10 @@ class TransaksiData extends DataClass implements Insertable<TransaksiData> {
           other.potongan == this.potongan &&
           other.total == this.total &&
           other.uangDiterima == this.uangDiterima &&
-          other.kembalian == this.kembalian);
+          other.kembalian == this.kembalian &&
+          other.batal == this.batal &&
+          other.alasanBatal == this.alasanBatal &&
+          other.waktuBatal == this.waktuBatal);
 }
 
 class TransaksiCompanion extends UpdateCompanion<TransaksiData> {
@@ -1810,6 +1932,9 @@ class TransaksiCompanion extends UpdateCompanion<TransaksiData> {
   final Value<int> total;
   final Value<int?> uangDiterima;
   final Value<int?> kembalian;
+  final Value<bool> batal;
+  final Value<String?> alasanBatal;
+  final Value<DateTime?> waktuBatal;
   const TransaksiCompanion({
     this.id = const Value.absent(),
     this.nomor = const Value.absent(),
@@ -1822,6 +1947,9 @@ class TransaksiCompanion extends UpdateCompanion<TransaksiData> {
     this.total = const Value.absent(),
     this.uangDiterima = const Value.absent(),
     this.kembalian = const Value.absent(),
+    this.batal = const Value.absent(),
+    this.alasanBatal = const Value.absent(),
+    this.waktuBatal = const Value.absent(),
   });
   TransaksiCompanion.insert({
     this.id = const Value.absent(),
@@ -1835,6 +1963,9 @@ class TransaksiCompanion extends UpdateCompanion<TransaksiData> {
     required int total,
     this.uangDiterima = const Value.absent(),
     this.kembalian = const Value.absent(),
+    this.batal = const Value.absent(),
+    this.alasanBatal = const Value.absent(),
+    this.waktuBatal = const Value.absent(),
   }) : nomor = Value(nomor),
        waktu = Value(waktu),
        metodeBayar = Value(metodeBayar),
@@ -1853,6 +1984,9 @@ class TransaksiCompanion extends UpdateCompanion<TransaksiData> {
     Expression<int>? total,
     Expression<int>? uangDiterima,
     Expression<int>? kembalian,
+    Expression<bool>? batal,
+    Expression<String>? alasanBatal,
+    Expression<DateTime>? waktuBatal,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1866,6 +2000,9 @@ class TransaksiCompanion extends UpdateCompanion<TransaksiData> {
       if (total != null) 'total': total,
       if (uangDiterima != null) 'uang_diterima': uangDiterima,
       if (kembalian != null) 'kembalian': kembalian,
+      if (batal != null) 'batal': batal,
+      if (alasanBatal != null) 'alasan_batal': alasanBatal,
+      if (waktuBatal != null) 'waktu_batal': waktuBatal,
     });
   }
 
@@ -1881,6 +2018,9 @@ class TransaksiCompanion extends UpdateCompanion<TransaksiData> {
     Value<int>? total,
     Value<int?>? uangDiterima,
     Value<int?>? kembalian,
+    Value<bool>? batal,
+    Value<String?>? alasanBatal,
+    Value<DateTime?>? waktuBatal,
   }) {
     return TransaksiCompanion(
       id: id ?? this.id,
@@ -1894,6 +2034,9 @@ class TransaksiCompanion extends UpdateCompanion<TransaksiData> {
       total: total ?? this.total,
       uangDiterima: uangDiterima ?? this.uangDiterima,
       kembalian: kembalian ?? this.kembalian,
+      batal: batal ?? this.batal,
+      alasanBatal: alasanBatal ?? this.alasanBatal,
+      waktuBatal: waktuBatal ?? this.waktuBatal,
     );
   }
 
@@ -1937,6 +2080,15 @@ class TransaksiCompanion extends UpdateCompanion<TransaksiData> {
     if (kembalian.present) {
       map['kembalian'] = Variable<int>(kembalian.value);
     }
+    if (batal.present) {
+      map['batal'] = Variable<bool>(batal.value);
+    }
+    if (alasanBatal.present) {
+      map['alasan_batal'] = Variable<String>(alasanBatal.value);
+    }
+    if (waktuBatal.present) {
+      map['waktu_batal'] = Variable<DateTime>(waktuBatal.value);
+    }
     return map;
   }
 
@@ -1953,7 +2105,10 @@ class TransaksiCompanion extends UpdateCompanion<TransaksiData> {
           ..write('potongan: $potongan, ')
           ..write('total: $total, ')
           ..write('uangDiterima: $uangDiterima, ')
-          ..write('kembalian: $kembalian')
+          ..write('kembalian: $kembalian, ')
+          ..write('batal: $batal, ')
+          ..write('alasanBatal: $alasanBatal, ')
+          ..write('waktuBatal: $waktuBatal')
           ..write(')'))
         .toString();
   }
@@ -3770,6 +3925,9 @@ typedef $$TransaksiTableCreateCompanionBuilder =
       required int total,
       Value<int?> uangDiterima,
       Value<int?> kembalian,
+      Value<bool> batal,
+      Value<String?> alasanBatal,
+      Value<DateTime?> waktuBatal,
     });
 typedef $$TransaksiTableUpdateCompanionBuilder =
     TransaksiCompanion Function({
@@ -3784,6 +3942,9 @@ typedef $$TransaksiTableUpdateCompanionBuilder =
       Value<int> total,
       Value<int?> uangDiterima,
       Value<int?> kembalian,
+      Value<bool> batal,
+      Value<String?> alasanBatal,
+      Value<DateTime?> waktuBatal,
     });
 
 final class $$TransaksiTableReferences
@@ -3872,6 +4033,21 @@ class $$TransaksiTableFilterComposer
 
   ColumnFilters<int> get kembalian => $composableBuilder(
     column: $table.kembalian,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get batal => $composableBuilder(
+    column: $table.batal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get alasanBatal => $composableBuilder(
+    column: $table.alasanBatal,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get waktuBatal => $composableBuilder(
+    column: $table.waktuBatal,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3964,6 +4140,21 @@ class $$TransaksiTableOrderingComposer
     column: $table.kembalian,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get batal => $composableBuilder(
+    column: $table.batal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get alasanBatal => $composableBuilder(
+    column: $table.alasanBatal,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get waktuBatal => $composableBuilder(
+    column: $table.waktuBatal,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$TransaksiTableAnnotationComposer
@@ -4017,6 +4208,19 @@ class $$TransaksiTableAnnotationComposer
 
   GeneratedColumn<int> get kembalian =>
       $composableBuilder(column: $table.kembalian, builder: (column) => column);
+
+  GeneratedColumn<bool> get batal =>
+      $composableBuilder(column: $table.batal, builder: (column) => column);
+
+  GeneratedColumn<String> get alasanBatal => $composableBuilder(
+    column: $table.alasanBatal,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get waktuBatal => $composableBuilder(
+    column: $table.waktuBatal,
+    builder: (column) => column,
+  );
 
   Expression<T> barisTransaksiRefs<T extends Object>(
     Expression<T> Function($$BarisTransaksiTableAnnotationComposer a) f,
@@ -4083,6 +4287,9 @@ class $$TransaksiTableTableManager
                 Value<int> total = const Value.absent(),
                 Value<int?> uangDiterima = const Value.absent(),
                 Value<int?> kembalian = const Value.absent(),
+                Value<bool> batal = const Value.absent(),
+                Value<String?> alasanBatal = const Value.absent(),
+                Value<DateTime?> waktuBatal = const Value.absent(),
               }) => TransaksiCompanion(
                 id: id,
                 nomor: nomor,
@@ -4095,6 +4302,9 @@ class $$TransaksiTableTableManager
                 total: total,
                 uangDiterima: uangDiterima,
                 kembalian: kembalian,
+                batal: batal,
+                alasanBatal: alasanBatal,
+                waktuBatal: waktuBatal,
               ),
           createCompanionCallback:
               ({
@@ -4109,6 +4319,9 @@ class $$TransaksiTableTableManager
                 required int total,
                 Value<int?> uangDiterima = const Value.absent(),
                 Value<int?> kembalian = const Value.absent(),
+                Value<bool> batal = const Value.absent(),
+                Value<String?> alasanBatal = const Value.absent(),
+                Value<DateTime?> waktuBatal = const Value.absent(),
               }) => TransaksiCompanion.insert(
                 id: id,
                 nomor: nomor,
@@ -4121,6 +4334,9 @@ class $$TransaksiTableTableManager
                 total: total,
                 uangDiterima: uangDiterima,
                 kembalian: kembalian,
+                batal: batal,
+                alasanBatal: alasanBatal,
+                waktuBatal: waktuBatal,
               ),
           withReferenceMapper: (p0) => p0
               .map(

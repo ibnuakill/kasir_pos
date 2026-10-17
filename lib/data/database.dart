@@ -98,6 +98,12 @@ class Transaksi extends Table {
   /// Hanya terisi untuk pembayaran Tunai; QRIS tidak punya Kembalian.
   IntColumn get uangDiterima => integer().nullable()();
   IntColumn get kembalian => integer().nullable()();
+
+  /// Transaksi Batal tidak dihapus: jejak kesalahannya harus tetap ada, dan
+  /// Omzet tidak menghitungnya (user story 65, 66).
+  BoolColumn get batal => boolean().withDefault(const Constant(false))();
+  TextColumn get alasanBatal => text().nullable()();
+  DateTimeColumn get waktuBatal => dateTime().nullable()();
 }
 
 /// Baris barang yang terjual. Nama, Satuan, dan harga disalin saat Transaksi
@@ -131,7 +137,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.inMemory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 5;
+  int get schemaVersion => 6;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -157,6 +163,11 @@ class AppDatabase extends _$AppDatabase {
       // baru dibuat di langkah `from < 2`, kolomnya sudah ikut terpasang.
       if (from >= 2 && from < 5) {
         await m.addColumn(produk, produk.foto);
+      }
+      if (from >= 4 && from < 6) {
+        await m.addColumn(transaksi, transaksi.batal);
+        await m.addColumn(transaksi, transaksi.alasanBatal);
+        await m.addColumn(transaksi, transaksi.waktuBatal);
       }
     },
     beforeOpen: (details) async {

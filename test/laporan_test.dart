@@ -191,7 +191,7 @@ void main() {
     await tutupAplikasi(tester);
   });
 
-  testWidgets('membuka Transaksi dari daftar menampilkan Struk-nya', (
+  testWidgets('membuka Transaksi dari daftar menampilkan detailnya', (
     tester,
   ) async {
     await catat(DateTime(2026, 10, 17, 9), produkId: kopiId);
@@ -200,10 +200,11 @@ void main() {
     await tester.tap(find.byKey(const Key('laporan-transaksi-1')));
     await tester.pumpAndSettle();
 
+    expect(find.text('Detail Transaksi'), findsOneWidget);
     expect(teksKunci(tester, 'struk-nomor'), 'TRX-20261017-001');
     expect(find.text('Kopi Bubuk'), findsOneWidget);
 
-    await tester.tap(find.byKey(const Key('struk-selesai')));
+    await tester.tap(find.byType(BackButton));
     await tester.pumpAndSettle();
     expect(teksKunci(tester, 'laporan-tanggal'), '17/10/2026');
 

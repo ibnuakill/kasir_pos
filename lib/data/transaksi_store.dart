@@ -9,6 +9,17 @@ import 'database.dart';
 /// Satu baris Keranjang yang siap disimpan sebagai bagian Transaksi. Harga
 /// yang dipakai adalah Harga Katalog saat baris masuk Keranjang, bukan harga
 /// katalog terbaru (user story 36).
+/// Dibatalkan dua kali akan mengembalikan Stok dua kali; layar menampilkan
+/// alasannya sebagai pesan, bukan galat tak terbaca.
+class TransaksiSudahBatalException implements Exception {
+  const TransaksiSudahBatalException({required this.nomor});
+
+  final String nomor;
+
+  @override
+  String toString() => 'Transaksi $nomor sudah dibatalkan';
+}
+
 class BarisTerjual {
   const BarisTerjual({required this.produk, required this.kuantitasMili});
 
@@ -162,6 +173,64 @@ class TransaksiStore {
       return (_db.select(
         _db.transaksi,
       )..where((t) => t.id.equals(id))).getSingle();
+    });
+  }
+
+  /// Satu Transaksi menurut id, atau null bila tidak ada.
+  Future<TransaksiData?> cari(int id) {
+    return (_db.select(
+      _db.transaksi,
+    )..where((t) => t.id.equals(id))).getSingleOrNull();
+  }
+
+  /// Membatalkan Transaksi: Stok tiap Produk kembali, lalu Transaksi ditandai
+  /// batal beserta alasannya (user story 63, 64).
+  ///
+  /// Transaksi Batal tidak dihapus, jadi Struk lamanya tetap bisa dibaca dan
+  /// kesalahan input tetap terlihat di Laporan.
+  Future<TransaksiData> batalkan(
+    int id, {
+    required String alasan,
+    required DateTime waktu,
+  }) async {
+    final bersih = alasan.trim();
+    if (bersih.isEmpty) {
+      throw ArgumentError.value(alasan, 'alasan', 'Alasan pembatalan wajib diisi');
+    }
+
+    return _db.transaction(() async {
+      final transaksi = await cari(id);
+      if (transaksi == null) {
+        throw StateError('Transaksi tidak ditemukan');
+      }
+      // Dibatalkan dua kali akan mengembalikan Stok dua kali, jadi pintunya
+      // ditutup di sini, bukan hanya di layar.
+      if (transaksi.batal) {
+        throw TransaksiSudahBatalException(nomor: transaksi.nomor);
+      }
+
+      for (final baris in await barisDari(id)) {
+        await _db
+            .into(_db.pergerakanStok)
+            .insert(
+              PergerakanStokCompanion.insert(
+                produkId: baris.produkId,
+                jenis: JenisPergerakan.pembatalan,
+                jumlahMili: baris.kuantitasMili,
+                waktu: waktu,
+              ),
+            );
+      }
+
+      await (_db.update(_db.transaksi)..where((t) => t.id.equals(id))).write(
+        TransaksiCompanion(
+          batal: const Value(true),
+          alasanBatal: Value(bersih),
+          waktuBatal: Value(waktu),
+        ),
+      );
+
+      return (await cari(id))!;
     });
   }
 

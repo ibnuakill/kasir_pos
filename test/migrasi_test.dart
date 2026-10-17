@@ -114,4 +114,61 @@ void main() {
       '/gambar/kopi.png',
     );
   });
+
+  test('database versi 5 mendapat kolom pembatalan tanpa kehilangan Transaksi', () async {
+    final dir = Directory.systemTemp.createTempSync('kasir_migrasi');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    final berkas = File(p.join(dir.path, 'kasir.sqlite'));
+
+    // Skema versi 5: Transaksi sudah ada, kolom pembatalan belum.
+    final lama = sqlite3.open(berkas.path);
+    lama.execute(
+      'CREATE TABLE app_settings ('
+      '"key" TEXT NOT NULL, "value" TEXT NOT NULL, PRIMARY KEY ("key"))',
+    );
+    lama.execute(
+      'CREATE TABLE transaksi ('
+      '"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, '
+      '"nomor" TEXT NOT NULL UNIQUE, "waktu" INTEGER NOT NULL, '
+      '"metode_bayar" TEXT NOT NULL, "subtotal" INTEGER NOT NULL, '
+      '"diskon_jenis" TEXT NULL, "diskon_nilai" INTEGER NULL, '
+      '"potongan" INTEGER NOT NULL, "total" INTEGER NOT NULL, '
+      '"uang_diterima" INTEGER NULL, "kembalian" INTEGER NULL)',
+    );
+    lama.execute(
+      'CREATE TABLE baris_transaksi ('
+      '"id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, '
+      '"transaksi_id" INTEGER NOT NULL, "produk_id" INTEGER NOT NULL, '
+      '"nama_produk" TEXT NOT NULL, "satuan" TEXT NOT NULL, '
+      '"harga_satuan" INTEGER NOT NULL, "kuantitas_mili" INTEGER NOT NULL, '
+      '"subtotal" INTEGER NOT NULL)',
+    );
+    lama.execute(
+      "INSERT INTO transaksi (nomor, waktu, metode_bayar, subtotal, potongan, "
+      "total, uang_diterima, kembalian) VALUES "
+      "('TRX-20261017-001', ${DateTime(2026, 10, 17, 9).millisecondsSinceEpoch ~/ 1000}, "
+      "'tunai', 15000, 0, 15000, 20000, 5000)",
+    );
+    lama.execute('PRAGMA user_version = 5');
+    lama.close();
+
+    final database = AppDatabase(NativeDatabase(berkas));
+    addTearDown(database.close);
+
+    // Transaksi lama tetap ada, dan dianggap belum batal.
+    final transaksi = await database.select(database.transaksi).getSingle();
+    expect(transaksi.nomor, 'TRX-20261017-001');
+    expect(transaksi.total, 15000);
+    expect(transaksi.batal, isFalse);
+    expect(transaksi.alasanBatal, isNull);
+
+    // Kolom barunya bisa ditulis.
+    final dibatalkan = await TransaksiStore(database).batalkan(
+      transaksi.id,
+      alasan: 'Salah input',
+      waktu: DateTime(2026, 10, 17, 10),
+    );
+    expect(dibatalkan.batal, isTrue);
+    expect(dibatalkan.alasanBatal, 'Salah input');
+  });
 }

@@ -13,8 +13,12 @@ class LaporanHarian {
   final DateTime tanggal;
   final List<TransaksiData> transaksi;
 
-  int get omzet => transaksi.fold(0, (jumlah, satu) => jumlah + satu.total);
-  int get jumlahTransaksi => transaksi.length;
+  /// Omzet dan jumlah Transaksi tidak menghitung Transaksi Batal: angkanya
+  /// harus berarti uang yang benar-benar masuk (user story 66).
+  int get omzet => transaksi
+      .where((satu) => !satu.batal)
+      .fold(0, (jumlah, satu) => jumlah + satu.total);
+  int get jumlahTransaksi => transaksi.where((satu) => !satu.batal).length;
   bool get kosong => transaksi.isEmpty;
 }
 
