@@ -6,6 +6,7 @@ import 'package:kasir/core/kuantitas.dart';
 import 'package:kasir/core/rupiah.dart';
 import 'package:kasir/features/kasir/diskon_dialog.dart';
 import 'package:kasir/features/kasir/keranjang.dart';
+import 'package:kasir/features/kasir/pembayaran_sheet.dart';
 import 'package:kasir/features/stok/stok_rules.dart';
 
 /// Isi Keranjang: baris yang bisa diubah Kuantitas-nya, bisa dihapus, dan
@@ -91,14 +92,29 @@ class PanelKeranjang extends ConsumerWidget {
         ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Row(
+          child: Column(
             children: [
-              Text('Total', style: teks.titleMedium),
-              const Spacer(),
-              Text(
-                formatRupiah(isi.total),
-                key: const Key('keranjang-total'),
-                style: teks.titleMedium,
+              Row(
+                children: [
+                  Text('Total', style: teks.titleMedium),
+                  const Spacer(),
+                  Text(
+                    formatRupiah(isi.total),
+                    key: const Key('keranjang-total'),
+                    style: teks.titleMedium,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  key: const Key('kasir-bayar'),
+                  onPressed: isi.kosong
+                      ? null
+                      : () => PembayaranSheet.tampilkan(context),
+                  child: const Text('Bayar'),
+                ),
               ),
             ],
           ),

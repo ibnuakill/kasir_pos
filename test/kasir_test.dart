@@ -328,4 +328,109 @@ void main() {
 
     await tutupAplikasi(tester);
   });
+
+  Future<void> bukaPembayaran(WidgetTester tester) async {
+    await tester.tap(find.byKey(const Key('kasir-bayar')));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> isiUang(WidgetTester tester, String teks) async {
+    await tester.enterText(find.byKey(const Key('bayar-uang-diterima')), teks);
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('Kembalian dihitung otomatis dari uang diterima', (tester) async {
+    await bukaKasir(tester);
+    await tekanProduk(tester, kopiId);
+    await bukaPembayaran(tester);
+
+    expect(teksKunci(tester, 'bayar-total'), 'Rp15.000');
+    expect(teksKunci(tester, 'bayar-kembalian'), 'Rp0');
+
+    await isiUang(tester, '20000');
+
+    expect(teksKunci(tester, 'bayar-kembalian'), 'Rp5.000');
+    expect(find.byKey(const Key('bayar-error')), findsNothing);
+
+    await tutupAplikasi(tester);
+  });
+
+  testWidgets('Uang kurang dari Total ditolak dengan pesan yang jelas', (
+    tester,
+  ) async {
+    await bukaKasir(tester);
+    await tekanProduk(tester, kopiId);
+    await bukaPembayaran(tester);
+
+    await isiUang(tester, '10000');
+
+    expect(teksKunci(tester, 'bayar-error'), 'Uang diterima kurang dari Total');
+    expect(teksKunci(tester, 'bayar-kembalian'), 'Rp0');
+
+    // Menekan tombol simpan tidak menyimpan apa pun; lembar tetap terbuka.
+    await tester.tap(find.byKey(const Key('bayar-simpan')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('bayar-uang-diterima')), findsOneWidget);
+    expect(find.textContaining('tersimpan'), findsNothing);
+
+    await tutupAplikasi(tester);
+  });
+
+  testWidgets('Simpan Transaksi memberi nomor dan mengosongkan Keranjang', (
+    tester,
+  ) async {
+    await bukaKasir(tester);
+    await tekanProduk(tester, kopiId);
+    await bukaPembayaran(tester);
+    await isiUang(tester, '20000');
+
+    await tester.tap(find.byKey(const Key('bayar-simpan')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Transaksi TRX-20261017-001 tersimpan'), findsOneWidget);
+    expect(find.text('Keranjang masih kosong'), findsOneWidget);
+    expect(teksKunci(tester, 'keranjang-total'), 'Rp0');
+
+    await tutupAplikasi(tester);
+  });
+
+  testWidgets('Transaksi berikutnya mendapat nomor urut setelahnya', (
+    tester,
+  ) async {
+    await bukaKasir(tester);
+    await tekanProduk(tester, kopiId);
+    await bukaPembayaran(tester);
+    await isiUang(tester, '15000');
+    await tester.tap(find.byKey(const Key('bayar-simpan')));
+    await tester.pumpAndSettle();
+
+    // SnackBar Transaksi pertama menutupi tombol Bayar; tunggu sampai hilang.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pumpAndSettle();
+
+    await tekanProduk(tester, kopiId);
+    await bukaPembayaran(tester);
+    await isiUang(tester, '15000');
+    await tester.tap(find.byKey(const Key('bayar-simpan')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Transaksi TRX-20261017-002 tersimpan'), findsOneWidget);
+
+    await tutupAplikasi(tester);
+  });
+
+  testWidgets('Stok berkurang begitu Transaksi tersimpan', (tester) async {
+    await bukaKasir(tester);
+    expect(find.text('stok 10'), findsOneWidget);
+
+    await tekanProduk(tester, kopiId);
+    await bukaPembayaran(tester);
+    await isiUang(tester, '15000');
+    await tester.tap(find.byKey(const Key('bayar-simpan')));
+    await tester.pumpAndSettle();
+
+    expect(find.text('stok 9'), findsOneWidget);
+
+    await tutupAplikasi(tester);
+  });
 }

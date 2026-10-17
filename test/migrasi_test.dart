@@ -6,6 +6,7 @@ import 'package:kasir/data/database.dart';
 import 'package:kasir/data/produk_store.dart';
 import 'package:kasir/data/stok_store.dart';
 import 'package:kasir/data/toko_store.dart';
+import 'package:kasir/data/transaksi_store.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
@@ -48,5 +49,21 @@ void main() {
       (await StokStore(database).watchTotalPerProduk().first)[produk],
       5000,
     );
+
+    // Tabel Transaksi juga ikut terpasang, dan Produk lama bisa langsung
+    // dijual tanpa menyentuh data yang sudah ada.
+    final terjual = await TransaksiStore(database).simpan(
+      waktu: DateTime(2026, 10, 17, 10),
+      metodeBayar: MetodeBayar.tunai,
+      baris: [
+        BarisTerjual(
+          produk: (await ProdukStore(database).cari(produk))!,
+          kuantitasMili: 1000,
+        ),
+      ],
+      uangDiterima: 20000,
+    );
+    expect(terjual.nomor, 'TRX-20261017-001');
+    expect(terjual.kembalian, 5000);
   });
 }

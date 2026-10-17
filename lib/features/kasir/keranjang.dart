@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kasir/core/diskon.dart';
 import 'package:kasir/core/kuantitas.dart';
+import 'package:kasir/core/rupiah.dart';
 import 'package:kasir/data/database.dart';
 
 /// Satu baris Keranjang. Harga diambil dari Harga Katalog saat Produk
@@ -13,9 +14,7 @@ class BarisKeranjang {
 
   /// Harga baris, dibulatkan ke rupiah terdekat karena uang tidak punya
   /// pecahan di aplikasi ini.
-  int get subtotal =>
-      (produk.hargaKatalog * kuantitasMili + skalaKuantitas ~/ 2) ~/
-      skalaKuantitas;
+  int get subtotal => hitungSubtotalBaris(produk.hargaKatalog, kuantitasMili);
 
   BarisKeranjang denganKuantitas(int mili) =>
       BarisKeranjang(produk: produk, kuantitasMili: mili);
@@ -93,6 +92,12 @@ class Keranjang extends Notifier<IsiKeranjang> {
   /// `null` berarti Diskon dihapus dan Total kembali sama dengan Subtotal.
   void pasangDiskon(Diskon? diskon) {
     state = IsiKeranjang(baris: state.baris, diskon: diskon);
+  }
+
+  /// Dipanggil setelah Transaksi tersimpan: pembeli berikutnya mulai dari nol
+  /// (user story 50).
+  void kosongkan() {
+    state = const IsiKeranjang();
   }
 }
 

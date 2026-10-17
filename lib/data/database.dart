@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
+import 'package:kasir/core/diskon.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -62,7 +63,62 @@ class PergerakanStok extends Table {
   DateTimeColumn get waktu => dateTime()();
 }
 
-@DriftDatabase(tables: [AppSettings, Kategori, Produk, PergerakanStok])
+/// Cara pembeli melunasi Transaksi. Versi ini hanya Tunai dan QRIS.
+enum MetodeBayar { tunai, qris }
+
+/// Satu Transaksi yang sudah tersimpan.
+///
+/// Nomor, waktu, dan seluruh angka uangnya dibekukan di sini supaya Struk lama
+/// tetap terbaca walau Harga Katalog berubah kemudian.
+class Transaksi extends Table {
+  IntColumn get id => integer().autoIncrement()();
+
+  /// `TRX-<YYYYMMDD>-<NNN>`; unik sebagai jaring pengaman terakhir kalau
+  /// penghitung urutan pernah salah.
+  TextColumn get nomor => text().unique()();
+
+  DateTimeColumn get waktu => dateTime()();
+  TextColumn get metodeBayar => textEnum<MetodeBayar>()();
+
+  IntColumn get subtotal => integer()();
+
+  /// Diskon disimpan sebagai bentuk aslinya, bukan hanya hasil potongannya,
+  /// supaya Struk bisa menulis "Diskon 10%".
+  TextColumn get diskonJenis => textEnum<JenisDiskon>().nullable()();
+  IntColumn get diskonNilai => integer().nullable()();
+  IntColumn get potongan => integer()();
+
+  IntColumn get total => integer()();
+
+  /// Hanya terisi untuk pembayaran Tunai; QRIS tidak punya Kembalian.
+  IntColumn get uangDiterima => integer().nullable()();
+  IntColumn get kembalian => integer().nullable()();
+}
+
+/// Baris barang yang terjual. Nama, Satuan, dan harga disalin saat Transaksi
+/// tersimpan, jadi riwayat tidak ikut berubah ketika katalog disunting
+/// (user story 17 dan 36).
+class BarisTransaksi extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get transaksiId => integer().references(Transaksi, #id)();
+  IntColumn get produkId => integer().references(Produk, #id)();
+  TextColumn get namaProduk => text()();
+  TextColumn get satuan => text()();
+  IntColumn get hargaSatuan => integer()();
+  IntColumn get kuantitasMili => integer()();
+  IntColumn get subtotal => integer()();
+}
+
+@DriftDatabase(
+  tables: [
+    AppSettings,
+    Kategori,
+    Produk,
+    PergerakanStok,
+    Transaksi,
+    BarisTransaksi,
+  ],
+)
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.executor);
 
@@ -70,7 +126,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.inMemory() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 4;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -87,6 +143,10 @@ class AppDatabase extends _$AppDatabase {
       }
       if (from < 3) {
         await m.createTable(pergerakanStok);
+      }
+      if (from < 4) {
+        await m.createTable(transaksi);
+        await m.createTable(barisTransaksi);
       }
     },
     beforeOpen: (details) async {

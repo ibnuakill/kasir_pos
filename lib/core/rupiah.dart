@@ -1,3 +1,5 @@
+import 'kuantitas.dart';
+
 /// Uang di seluruh aplikasi adalah bilangan bulat rupiah, jadi tidak ada
 /// pembulatan di mana pun: hanya tampilan yang diberi titik ribuan.
 String formatRupiah(int nilai) {
@@ -19,3 +21,11 @@ int? parseRupiah(String teks) {
   if (digit.isEmpty) return null;
   return int.tryParse(digit);
 }
+
+/// Harga satu baris: harga satuan × Kuantitas, dibulatkan ke rupiah terdekat
+/// karena uang di aplikasi ini tidak punya pecahan.
+///
+/// Dipakai bersama oleh Keranjang dan oleh Transaksi yang disimpan, supaya
+/// angka di layar dan angka di database tidak pernah beda satu rupiah.
+int hitungSubtotalBaris(int hargaSatuan, int kuantitasMili) =>
+    (hargaSatuan * kuantitasMili + skalaKuantitas ~/ 2) ~/ skalaKuantitas;
